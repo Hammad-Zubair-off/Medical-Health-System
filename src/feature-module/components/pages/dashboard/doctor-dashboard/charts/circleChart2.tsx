@@ -1,0 +1,56 @@
+import { useMemo } from "react";
+import Chart from "react-apexcharts";
+
+interface CircleChart2Props {
+  completed?: number;
+  pending?: number;
+  cancelled?: number;
+}
+
+const CircleChart2 = ({ completed = 0, pending = 0, cancelled = 0 }: CircleChart2Props) => {
+  const chartOptions = useMemo(() => ({
+    chart: {
+      type: "donut" as const,
+      height: 270,
+      width: "100%",
+    },
+    labels: ["Completed", "Pending", "Cancelled"],
+    colors: ["#27AE60", "#E2B93B", "#EF1E1E"], // green, yellow, red
+    legend: {
+      show: false,
+    },
+    dataLabels: {
+      enabled: false,
+    },
+    stroke: {
+      width: 2,
+      colors: ["#fff"],
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: "75%",
+          labels: {
+            show: false, // Hide center label
+          },
+        },
+      },
+    },
+    tooltip: {
+      enabled: true,
+      y: {
+        formatter: (value: number) => `${value} appointments`,
+      },
+    },
+  }), []);
+
+  const series = useMemo(() => [completed, pending, cancelled], [completed, pending, cancelled]);
+
+  return (
+    <div id="circle-chart-2">
+      <Chart options={chartOptions} series={series} type="donut" height={270} />
+    </div>
+  );
+};
+
+export default CircleChart2;
