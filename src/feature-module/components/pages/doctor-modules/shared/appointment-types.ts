@@ -1,4 +1,4 @@
-import type { FirestoreAppointment, PatientData } from "../../../../../../core/services/firestore/appointments.service";
+import type { FirestoreAppointment, PatientData } from "../../../../../core/services/firestore/appointments.service";
 
 // Extended Appointment interface that works with both Firestore and UI
 export interface Appointment {

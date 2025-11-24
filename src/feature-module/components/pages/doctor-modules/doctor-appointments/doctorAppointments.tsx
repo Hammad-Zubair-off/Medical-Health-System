@@ -7,21 +7,7 @@ import AppointmentTable from "../shared/appointment-components/AppointmentTable"
 import { useAppointments } from "../shared/appointment-hooks/useAppointments";
 import Modal from "./modal/modals";
 import { all_routes } from "../../../../routes/all_routes";
-
-// Appointment type based on what useAppointments returns
-interface Appointment {
-  id: string;
-  AppointmentId: string;
-  Date_Time: string;
-  Patient: string;
-  img?: string;
-  phone_number: string;
-  Mode: string;
-  Status: string;
-  _firestoreData?: {
-    [key: string]: unknown;
-  };
-}
+import type { Appointment } from "../shared/appointment-types";
 
 const DoctorAppointments = () => {
   const navigate = useNavigate();
@@ -41,10 +27,6 @@ const DoctorAppointments = () => {
 
   const handleSearch = (value: string) => {
     setSearchText(value);
-  };
-
-  const handleNewAppointment = () => {
-    // Modal will be opened via data-bs-toggle
   };
 
   const handleView = (appointment: Appointment) => {
@@ -152,7 +134,6 @@ const DoctorAppointments = () => {
         <div className="content">
           {/* Page Header */}
           <AppointmentHeader
-            onNewAppointmentClick={handleNewAppointment}
             onExportClick={handleExport}
             viewMode="list"
             onViewModeChange={handleViewModeChange}

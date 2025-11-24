@@ -23,10 +23,6 @@ const DoctorsAppointmentDetails = () => {
     setSearchText(value);
   };
 
-  const handleNewAppointment = () => {
-    // Modal will be opened via data-bs-toggle
-  };
-
   const handleExport = (format: "pdf" | "excel") => {
     // TODO: Implement export functionality
     console.log(`Exporting as ${format}`);
@@ -48,7 +44,6 @@ const DoctorsAppointmentDetails = () => {
         <div className="content">
           {/* Page Header */}
           <AppointmentHeader
-            onNewAppointmentClick={handleNewAppointment}
             onExportClick={handleExport}
             viewMode="calendar"
             onViewModeChange={handleViewModeChange}

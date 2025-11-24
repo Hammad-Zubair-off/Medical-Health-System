@@ -1,5 +1,3 @@
-import { Link } from "react-router";
-
 interface ConsultationActionsProps {
   onCancel?: () => void;
   onComplete?: () => void;

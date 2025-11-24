@@ -1,12 +1,8 @@
-import { Link } from "react-router";
-
 interface DashboardHeaderProps {
-  onNewAppointmentClick?: () => void;
   onScheduleAvailabilityClick?: () => void;
 }
 
 const DashboardHeader = ({
-  onNewAppointmentClick,
   onScheduleAvailabilityClick,
 }: DashboardHeaderProps) => {
   return (

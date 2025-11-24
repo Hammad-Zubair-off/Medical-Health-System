@@ -1,14 +1,12 @@
 import { Link } from "react-router";
 
 interface AppointmentHeaderProps {
-  onNewAppointmentClick?: () => void;
   onExportClick?: (format: "pdf" | "excel") => void;
   viewMode?: "list" | "calendar";
   onViewModeChange?: (mode: "list" | "calendar") => void;
 }
 
 const AppointmentHeader = ({
-  onNewAppointmentClick,
   onExportClick,
   viewMode = "list",
   onViewModeChange,

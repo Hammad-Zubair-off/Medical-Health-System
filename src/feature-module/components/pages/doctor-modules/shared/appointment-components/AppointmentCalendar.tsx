@@ -4,7 +4,6 @@ import type { EventApi } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import ImageWithBasePath from "../../../../../../core/imageWithBasePath";
 import type { Appointment } from "../appointment-types";
 
 interface AppointmentCalendarProps {
@@ -81,11 +80,11 @@ const AppointmentCalendar = ({
     return (
       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
         {hasImage ? (
-          <ImageWithBasePath
+          <img
             src={image}
             alt={patientName}
             className="avatar-xs rounded-circle"
-            style={{ width: "20px", height: "20px" }}
+            style={{ width: "20px", height: "20px", objectFit: "cover" }}
           />
         ) : (
           <span

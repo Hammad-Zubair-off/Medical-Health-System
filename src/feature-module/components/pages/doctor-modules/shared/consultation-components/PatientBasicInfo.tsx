@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 import ImageWithBasePath from "../../../../../../core/imageWithBasePath";
 
 interface PatientInfo {

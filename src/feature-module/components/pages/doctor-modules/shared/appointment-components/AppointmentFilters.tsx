@@ -1,7 +1,6 @@
 import { Link } from "react-router";
 import { useState } from "react";
 import { DatePicker, Select } from "antd";
-import dayjs from "dayjs";
 import type { FilterValues } from "../appointment-types";
 import { Status } from "../../../../../../core/common/selectOption";
 

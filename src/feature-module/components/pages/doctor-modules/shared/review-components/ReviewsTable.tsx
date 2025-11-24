@@ -3,7 +3,6 @@ import { useState } from "react";
 import Datatable from "../../../../../../core/common/dataTable/index";
 import StarRating from "./StarRating";
 import type { Review } from "../review-types";
-import ImageWithBasePath from "../../../../../../core/imageWithBasePath";
 
 interface ReviewsTableProps {
   data: Review[];

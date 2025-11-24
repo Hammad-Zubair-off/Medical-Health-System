@@ -1,4 +1,4 @@
-import type { DoctorEnabledDays } from "../../../../../core/services/firestore/doctor.service";
+import type { DoctorEnabledDays } from "../../../../../../core/services/firestore/doctor.service";
 import type { ScheduleRow, DayKey } from "../types";
 import { getDayLabel, hasValidTimeRange } from "../utils";
 import { DAYS } from "../types";

@@ -4,23 +4,7 @@ import ImageWithBasePath from "../../../../../../core/imageWithBasePath";
 import { DatePicker, TimePicker, type TimePickerProps } from "antd";
 import dayjs from "dayjs";
 import StatusBadge from "../../shared/appointment-components/StatusBadge";
-
-interface Appointment {
-  id: string;
-  AppointmentId: string;
-  Date_Time: string;
-  Patient: string;
-  img?: string;
-  phone_number: string;
-  Mode: string;
-  Status: string;
-  _firestoreData?: {
-    description?: string;
-    Complain?: string;
-    appointmentType?: string;
-    [key: string]: unknown;
-  };
-}
+import type { Appointment } from "../../shared/appointment-types";
 
 interface ModalProps {
   selectedAppointment?: Appointment | null;

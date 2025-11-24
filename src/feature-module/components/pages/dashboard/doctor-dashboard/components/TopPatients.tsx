@@ -1,6 +1,5 @@
 import { Link } from "react-router";
 import { useMemo, useState } from "react";
-import ImageWithBasePath from "../../../../../../core/imageWithBasePath";
 import type { FirestoreAppointment } from "../../../../../../core/services/firestore/appointments.service";
 
 interface TopPatientsProps {
@@ -50,11 +49,12 @@ const TopPatients = ({ appointmentsWithPatients = [] }: TopPatientsProps) => {
 
     if (hasPatientImage) {
       return (
-        <ImageWithBasePath
+        <img
           src={patientImage}
           alt={patientName}
           className="rounded-circle"
           onError={() => setImageError(true)}
+          style={{ width: "40px", height: "40px", objectFit: "cover" }}
         />
       );
     }
