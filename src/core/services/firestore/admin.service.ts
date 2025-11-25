@@ -190,7 +190,7 @@ export const getAdminStatistics = async (): Promise<AdminStatistics> => {
     // Calculate revenue (sum of all paid/completed appointments)
     // Check multiple possible payment status field names
     const revenueAppointments = appointments.filter((apt) => {
-      const paymentStatus = apt.payment_status || (apt as Record<string, unknown>).paymentStatus || "";
+      const paymentStatus = apt.payment_status || (apt as unknown as Record<string, unknown>).paymentStatus || "";
       const status = apt.status || "";
       const hasPrice = apt.price && apt.price > 0;
       
@@ -312,7 +312,6 @@ export const getPopularDoctors = async (limit: number = 3): Promise<PopularDocto
   try {
     const appointments = await getAllAppointments();
     const doctors = await getAllDoctors();
-    const usersRef = collection(db, "Users");
     
     // Count appointments per doctor
     const doctorBookings = new Map<string, number>();
@@ -336,7 +335,9 @@ export const getPopularDoctors = async (limit: number = 3): Promise<PopularDocto
         // Try to get doctor name from Users collection
         const doctorUserId = typeof doctor.userid === "string" 
           ? doctor.userid 
-          : doctor.userid?.id || "";
+          : (doctor.userid && typeof doctor.userid === "object" && "id" in doctor.userid)
+          ? (doctor.userid as { id: string }).id
+          : "";
         
         if (doctorUserId && !doctorName) {
           try {
@@ -411,7 +412,7 @@ export const getTopDepartments = async (limit: number = 3): Promise<TopDepartmen
         const stats = departmentStats.get(dept);
         if (stats) {
           stats.count++;
-          const paymentStatus = apt.payment_status || (apt as Record<string, unknown>).paymentStatus || "";
+          const paymentStatus = apt.payment_status || (apt as unknown as Record<string, unknown>).paymentStatus || "";
           const status = apt.status || "";
           if (paymentStatus === "paid" || status === "completed" || status === "checked-out") {
             stats.revenue += apt.price || 0;
@@ -603,7 +604,6 @@ export const getIncomeByTreatment = async (): Promise<Array<{
 export const getAvailableDoctors = async (limit: number = 4): Promise<AvailableDoctor[]> => {
   try {
     const doctors = await getAllDoctors();
-    const usersRef = collection(db, "Users");
     const availableDoctors: AvailableDoctor[] = [];
     
     for (const doctor of doctors) {
@@ -618,7 +618,9 @@ export const getAvailableDoctors = async (limit: number = 4): Promise<AvailableD
         // Try to get doctor name from Users collection
         const doctorUserId = typeof doctor.userid === "string" 
           ? doctor.userid 
-          : doctor.userid?.id || "";
+          : (doctor.userid && typeof doctor.userid === "object" && "id" in doctor.userid)
+          ? (doctor.userid as { id: string }).id
+          : "";
         
         if (doctorUserId && !doctorName) {
           try {
