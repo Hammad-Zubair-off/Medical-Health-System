@@ -8,13 +8,20 @@ import { useDispatch, useSelector } from "react-redux";
 import { setExpandMenu, setMobileSidebar } from "../../redux/sidebarSlice";
 import { updateTheme } from "../../redux/themeSlice";
 import { all_routes } from "../../../feature-module/routes/all_routes";
+import { useAuth } from "../../context/AuthContext";
 
 
 const Sidebar = () => {
   const Location = useLocation();
+  const { role } = useAuth();
   const [subOpen, setSubopen] = useState<any>("");
   const [subsidebar, setSubsidebar] = useState("");
   const dispatch = useDispatch();
+
+  const menuGroups = SidebarData.filter((group: any) => {
+    if (!group.roles || !role) return true;
+    return group.roles.includes(role);
+  });
 
   const toggleSidebar = (title: any) => {
     localStorage.setItem("menuOpened", title);
@@ -268,7 +275,7 @@ const Sidebar = () => {
               </div>
             </div>
             <ul>
-              {SidebarData?.map((mainLabel, index) => (
+              {menuGroups?.map((mainLabel, index) => (
                 <React.Fragment key={`main-${index}`}>
                   <li className="menu-title">
                     <span>{mainLabel?.tittle}</span>

@@ -5,6 +5,7 @@ const routes = all_routes;
 export const SidebarData = [
   {
     tittle: "Main Menu",
+    roles: ["admin", "doctor", "patient"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -20,8 +21,6 @@ export const SidebarData = [
         dot: true,
         submenuItems: [
           { label: "Admin Dashboard", link: routes.dashboard },
-          { label: "Doctor Dashboard", link: routes.doctordashboard },
-          { label: "Patient Dashboard", link: routes.patientdashboard },
         ],
       },
       {
@@ -242,6 +241,7 @@ export const SidebarData = [
   },
   {
     tittle: "Clinic",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -363,6 +363,7 @@ export const SidebarData = [
   },
   {
     tittle: "HRM",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -463,6 +464,7 @@ export const SidebarData = [
   },
   {
     tittle: "Finance & Accounts",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -532,6 +534,7 @@ export const SidebarData = [
   },
   {
     tittle: "Administration",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -574,6 +577,7 @@ export const SidebarData = [
   },
   {
     tittle: "Content",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -679,6 +683,7 @@ export const SidebarData = [
   },
   {
     tittle: "Support",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -731,6 +736,7 @@ export const SidebarData = [
   },
   {
     tittle: "Pages",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -841,6 +847,7 @@ export const SidebarData = [
   },
   {
     tittle: "Authentication",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -854,18 +861,6 @@ export const SidebarData = [
         base: "inventory",
         materialicons: "dashboard",
         submenuItems: [
-          {
-            label: "Cover",
-            link: routes.loginCover,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Illustration",
-            link: routes.loginillustration,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
           {
             label: "Basic",
             link: routes.loginbasic,
@@ -884,18 +879,6 @@ export const SidebarData = [
         materialicons: "dashboard",
         submenuItems: [
           {
-            label: "Cover",
-            link: routes.registercover,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Illustration",
-            link: routes.registerillustration,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
             label: "Basic",
             link: routes.registerbasic,
             base: "invoices",
@@ -912,18 +895,6 @@ export const SidebarData = [
         base: "inventory",
         materialicons: "dashboard",
         submenuItems: [
-          {
-            label: "Cover",
-            link: routes.forgotpasswordcover,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Illustration",
-            link: routes.forgotpasswordillustration,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
           {
             label: "Basic",
             link: routes.forgotpasswordbasic,
@@ -942,18 +913,6 @@ export const SidebarData = [
         materialicons: "dashboard",
         submenuItems: [
           {
-            label: "Cover",
-            link: routes.resetpasswordcover,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Illustration",
-            link: routes.resetpasswordillustration,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
             label: "Basic",
             link: routes.resetpasswordbasic,
             base: "invoices",
@@ -971,18 +930,6 @@ export const SidebarData = [
         materialicons: "dashboard",
         submenuItems: [
           {
-            label: "Cover",
-            link: routes.emailverificationcover,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Illustration",
-            link: routes.emailverificationillustration,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
             label: "Basic",
             link: routes.emailverificationbasic,
             base: "invoices",
@@ -999,18 +946,6 @@ export const SidebarData = [
         base: "inventory",
         materialicons: "dashboard",
         submenuItems: [
-          {
-            label: "Cover",
-            link: routes.twostepverificationcover,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Illustration",
-            link: routes.twostepverificationillustration,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
           {
             label: "Basic",
             link: routes.twostepverificationbasic,
@@ -1056,6 +991,7 @@ export const SidebarData = [
   },
   {
     tittle: "Settings",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,
@@ -1362,480 +1298,8 @@ export const SidebarData = [
     ],
   },
   {
-    tittle: "UI Interface",
-    icon: "airplay",
-    showAsTab: true,
-    separateRoute: false,
-    submenuItems: [
-      {
-        label: "Base UI",
-        link: "apps",
-        submenu: true,
-        showSubRoute: false,
-        icon: "chart-pie",
-        base: "inventory",
-        materialicons: "dashboard",
-        submenuItems: [
-          {
-            label: "Accordion",
-            link: routes.uiAccordion,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Alerts",
-            link: routes.uiAlerts,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Avatar",
-            link: routes.uiAvatar,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Badges",
-            link: routes.uiBadges,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Breadcrumb",
-            link: routes.uiBreadcrumb,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Buttons",
-            link: routes.uiButtons,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Button Group",
-            link: routes.uiButtonsGroup,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Card",
-            link: routes.uiCards,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Carousel",
-            link: routes.uiCarousel,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Collapse",
-            link: routes.uiCollapse,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Dropdowns",
-            link: routes.uiDropdowns,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Ratio",
-            link: routes.uiRatio,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Grid",
-            link: routes.uiGrid,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Images",
-            link: routes.uiImages,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Links",
-            link: routes.uiLinks,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "List Group",
-            link: routes.uiListGroup,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Modals",
-            link: routes.uiModals,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Offcanvas",
-            link: routes.uiOffcanvas,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Pagination",
-            link: routes.uiPagination,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Placeholders",
-            link: routes.uiPlaceholders,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Popovers",
-            link: routes.uiPopovers,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Progress",
-            link: routes.uiProgress,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Scrollspy",
-            link: routes.uiScrollspy,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Spinner",
-            link: routes.uiSpinner,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Tabs",
-            link: routes.uiNavTabs,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Toasts",
-            link: routes.uiToasts,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Tooltips",
-            link: routes.uiTooltips,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Typography",
-            link: routes.uiTypography,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Utilities",
-            link: routes.uiUtilities,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-        ],
-      },
-      {
-        label: "Advanced UI",
-        link: "apps",
-        submenu: true,
-        showSubRoute: false,
-        icon: "radar",
-        base: "inventory",
-        materialicons: "dashboard",
-        submenuItems: [
-          {
-            label: "Dragula",
-            link: routes.dragula,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Clipboard",
-            link: routes.uiClipboard,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Range Slider",
-            link: routes.uiRangeslider,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Lightbox",
-            link: routes.uiLightbox,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Rating",
-            link: routes.uiRating,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Counter",
-            link: routes.uiCounter,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Scrollbar",
-            link: routes.uiScrollbar,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-        ],
-      },
-      {
-        label: "Forms",
-        link: "apps",
-        submenu: true,
-        showSubRoute: false,
-        icon: "forms",
-        base: "inventory",
-        materialicons: "dashboard",
-        submenuItems: [
-          {
-            label: "Form Elements",
-            link: "apps",
-            submenu: true,
-            showSubRoute: false,
-            base: "inventory",
-            materialicons: "dashboard",
-            submenuItems: [
-              {
-                label: "Basic Inputs",
-                link: routes.formBasicInputs,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-              {
-                label: "Checkbox & Radios",
-                link: routes.formCheckboxRadios,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-              {
-                label: "Input Groups",
-                link: routes.formInputGroups,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-              {
-                label: "Grid & Gutters",
-                link: routes.formGridGutters,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-              {
-                label: "Input Masks",
-                link: routes.formMask,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-              {
-                label: "File Uploads",
-                link: routes.formFileupload,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-            ],
-          },
-          {
-            label: "Layouts",
-            link: "apps",
-            submenu: true,
-            showSubRoute: false,
-            base: "inventory",
-            materialicons: "dashboard",
-            submenuItems: [
-              {
-                label: "Horizontal Form",
-                link: routes.formHorizontal,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-              {
-                label: "Vertical Form",
-                link: routes.formVertical,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-              {
-                label: "Floating Labels",
-                link: routes.formFloatingLabels,
-                base: "invoices",
-                customSubmenuTwo: false,
-              },
-            ],
-          },
-          {
-            label: "Form Validation",
-            link: routes.formValidation,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Select2",
-            link: routes.formSelect2,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Form Wizard",
-            link: routes.formWizard,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Form Picker",
-            link: routes.formPickers,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-        ],
-      },
-      {
-        label: "Tables",
-        link: "apps",
-        submenu: true,
-        showSubRoute: false,
-        icon: "table-row",
-        base: "inventory",
-        materialicons: "dashboard",
-        submenuItems: [
-          {
-            label: "Basic Tables ",
-            link: routes.tablesBasic,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Data Table ",
-            link: routes.dataTables,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-        ],
-      },
-      {
-        label: "Charts",
-        link: "apps",
-        submenu: true,
-        showSubRoute: false,
-        icon: "chart-donut",
-        base: "inventory",
-        materialicons: "dashboard",
-        submenuItems: [
-          {
-            label: "Apex Charts",
-            link: routes.chartApex,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-        ],
-      },
-      {
-        label: "Icons",
-        link: "apps",
-        submenu: true,
-        showSubRoute: false,
-        icon: "icons",
-        base: "inventory",
-        materialicons: "dashboard",
-        submenuItems: [
-          {
-            label: "Fontawesome Icons",
-            link: routes.iconFontawesome,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Tabler Icons",
-            link: routes.iconTabler,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Bootstrap Icons",
-            link: routes.iconBootstrap,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Remix Icons",
-            link: routes.iconRemix,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Ionic Icons",
-            link: routes.iconIonic,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Material Icons",
-            link: routes.iconMaterial,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Pe7 Icons",
-            link: routes.iconPe7,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-
-          {
-            label: "Themify Icons",
-            link: routes.iconThemify,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Weather Icons",
-            link: routes.iconWeather,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Typicon Icons",
-            link: routes.iconTypicon,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-          {
-            label: "Flag Icons",
-            link: routes.iconFlag,
-            base: "invoices",
-            customSubmenuTwo: false,
-          },
-        ],
-      },
-    ],
-  },
-  {
     tittle: "Help",
+    roles: ["admin"] as const,
     icon: "airplay",
     showAsTab: true,
     separateRoute: false,

@@ -1,5 +1,7 @@
 # Quick Reference Guide
 
+> ⚠️ **Stale:** This document predates Phase A (Auth & RBAC). Prefer `README.md` and `docs/AUTH.md`.
+
 ## 📊 **Project Statistics**
 
 - **Total Routes**: 276

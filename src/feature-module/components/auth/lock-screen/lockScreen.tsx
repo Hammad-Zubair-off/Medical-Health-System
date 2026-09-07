@@ -81,7 +81,7 @@ const LockScreen = () => {
                       </div>
                       <div className="mb-2">
                         <Link
-                          to={all_routes.loginCover}
+                          to={all_routes.login}
                           className="btn bg-primary text-white w-100"
                         >
                           Login

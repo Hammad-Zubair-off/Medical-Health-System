@@ -8,7 +8,7 @@ import {
   getAppointmentById as getAppointmentByIdService,
   type FirestoreAppointment,
 } from "../../../../../../core/services/firestore/appointments.service";
-import { useUser } from "../../../../../../core/context/UserContext";
+import { useAuth } from "../../../../../../core/context/AuthContext";
 import { Timestamp } from "firebase/firestore";
 
 export interface UseAppointmentsReturn {
@@ -68,7 +68,7 @@ const convertFirestoreToAppointment = (
 };
 
 export const useAppointments = (): UseAppointmentsReturn => {
-  const { doctorUserId } = useUser();
+  const { doctorUserId, doctorId } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,8 +110,12 @@ export const useAppointments = (): UseAppointmentsReturn => {
       setLoading(true);
       setError(null);
       try {
-        const doctorId = "rg7yL0esOEBVsv1Lh9mt";
-        
+        if (!doctorId) {
+          throw new Error(
+            "Doctor profile is not linked. Contact an administrator."
+          );
+        }
+
         const firestoreData: Omit<FirestoreAppointment, "_id" | "doctorUserId" | "doctorId" | "created"> = {
           AppointmentId: appointmentData.AppointmentId || "",
           appointmentDate: new Date(appointmentData.Date_Time),
@@ -139,7 +143,7 @@ export const useAppointments = (): UseAppointmentsReturn => {
         setLoading(false);
       }
     },
-    [doctorUserId]
+    [doctorUserId, doctorId]
   );
 
   // Update appointment

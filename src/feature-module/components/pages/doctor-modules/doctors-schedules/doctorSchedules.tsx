@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { useUser } from "../../../../../core/context/UserContext";
+import { useAuth } from "../../../../../core/context/AuthContext";
 import { type DoctorEnabledDays } from "../../../../../core/services/firestore/doctor.service";
 import { useScheduleState } from "./hooks/useScheduleState";
 import { useHolidays } from "./hooks/useHolidays";
@@ -11,7 +11,7 @@ import { HolidaysSection } from "./components/HolidaysSection";
 import type { DayKey } from "./types";
 
 const DoctorSchedules = () => {
-  const { doctorUserId } = useUser();
+  const { doctorUserId } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [enabledDays, setEnabledDays] = useState<DoctorEnabledDays>({
     monday: false,

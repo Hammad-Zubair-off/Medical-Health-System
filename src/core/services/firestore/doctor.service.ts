@@ -1,6 +1,5 @@
-import { doc, getDoc, collection, query, where, getDocs, Timestamp, updateDoc } from "firebase/firestore";
-// @ts-expect-error - Firebase config file (JS file, no types)
-import { db } from "../../../firebase";
+import { doc, getDoc, collection, query, where, getDocs, Timestamp, updateDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "../../../firebase";
 
 export interface DoctorTimeSlots {
   mondayStart?: Timestamp | Date;
@@ -315,7 +314,11 @@ export const updateDoctorSchedule = async (
       updateData.holidays = holidaysToUpdate;
     }
 
-    await updateDoc(doctorRef, updateData);
+    await updateDoc(doctorRef, {
+      ...updateData,
+      updated: serverTimestamp(),
+      updatedBy: auth.currentUser?.uid ?? null,
+    });
 
     console.log("✅ [Doctor Service] Successfully updated doctor schedule");
   } catch (error) {
