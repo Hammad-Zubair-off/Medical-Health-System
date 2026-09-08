@@ -31,6 +31,12 @@ service cloud.firestore {
         && resource.data.userid == userRef();
     }
 
+    function isLinkedPatient() {
+      return isSignedIn()
+        && resource.data.keys().hasAny(["userId"])
+        && resource.data.userId == request.auth.uid;
+    }
+
     function appointmentReadable() {
       return isAdmin()
         || (isSignedIn()
@@ -39,8 +45,22 @@ service cloud.firestore {
                 || resource.data.doctorUserId == request.auth.uid))
         || (isSignedIn()
             && resource.data.keys().hasAny(["UserPatientID"])
+            && resource.data.UserPatientID != null
             && (resource.data.UserPatientID == userRef()
-                || resource.data.UserPatientID == request.auth.uid));
+                || resource.data.UserPatientID == request.auth.uid))
+        || (isSignedIn()
+            && resource.data.keys().hasAny(["patientId"])
+            && resource.data.patientId is string
+            && get(/databases/$(database)/documents/Patient/$(resource.data.patientId)).data.userId
+                == request.auth.uid);
+    }
+
+    function appointmentCreateAllowed() {
+      return isAdmin()
+        || hasRole("doctor")
+        || (hasRole("patient")
+            && request.resource.data.keys().hasAny(["UserPatientID"])
+            && request.resource.data.UserPatientID == userRef());
     }
 
     match /Users/{uid} {
@@ -59,22 +79,41 @@ service cloud.firestore {
       allow update: if isAdmin() || doctorOwnsDoc();
     }
 
+    // Patient clinical data lives here, not on Users — this is what lets a
+    // doctor read their patients' names/contact info without being isSelf or
+    // isAdmin on the (private) Users doc. See docs/DATA_MIGRATION_PLAN.md Step 0.
+    match /Patient/{id} {
+      allow read: if isAdmin() || hasRole("doctor") || isLinkedPatient();
+      allow create: if isAdmin() || hasRole("doctor");
+      // The linked patient may only touch a narrow self-service field set —
+      // never their own status or primaryDoctorId.
+      allow update: if isAdmin()
+        || hasRole("doctor")
+        || (isLinkedPatient()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(["phoneNumber", "address", "photoUrl", "updated", "updatedBy"]));
+      allow delete: if isAdmin();
+    }
+
+    match /Specialization/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     match /Appointment/{id} {
       allow read: if appointmentReadable();
-      allow create: if isAdmin()
-        || hasRole("doctor")
-        || (hasRole("patient")
-            && request.resource.data.UserPatientID == userRef());
+      // Walk-in booking: admin/doctor may create with patientId and null UserPatientID.
+      allow create: if appointmentCreateAllowed()
+        && request.resource.data.keys().hasAny(["patientId"]);
       allow update: if isAdmin()
         || (isSignedIn()
             && resource.data.keys().hasAny(["doctorUserId"])
             && (resource.data.doctorUserId == userRef()
                 || resource.data.doctorUserId == request.auth.uid))
         || (hasRole("patient")
-            && resource.data.keys().hasAny(["UserPatientID"])
-            && resource.data.UserPatientID == userRef()
+            && appointmentReadable()
             && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(["status", "updated", "updatedBy"]));
+                .hasOnly(["status", "cancel_reason", "updated", "updatedBy"]));
       allow delete: if isAdmin();
     }
 

@@ -1,17 +1,19 @@
 import type { RouteObject } from "react-router";
-import ComingSoonShared from "../components/pages/shared/ComingSoon";
-import DoctorAppointments from "../components/pages/doctor-modules/doctor-appointments/doctorAppointments";
-import DoctorDahboard from "../components/pages/dashboard/doctor-dashboard/doctorDahboard";
-import DoctorSchedules from "../components/pages/doctor-modules/doctors-schedules/doctorSchedules";
-import DoctorsAppointmentDetails from "../components/pages/doctor-modules/doctors-appointment-details/doctorsAppointmentDetails";
-import DoctorsNotificationSettings from "../components/pages/doctor-modules/doctors-notification-settings/doctorsNotificationSettings";
-import DoctorsPasswordSettings from "../components/pages/doctor-modules/doctors-password-settings/doctorsPasswordSettings";
-import DoctorsPrescriptionDetails from "../components/pages/doctor-modules/doctors-prescription-details/doctorsPrescriptionDetails";
-import DoctorsProfileSettings from "../components/pages/doctor-modules/doctors-profile-settings/doctorsProfileSettings";
-import DoctorsReviews from "../components/pages/doctor-modules/doctors-reviews/doctorsReviews";
+import { lazyPage } from "./lazyPage";
 import { all_routes } from "./all_routes";
 
 const routes = all_routes;
+
+const ComingSoonShared = lazyPage(() => import("../components/pages/shared/ComingSoon"));
+const DoctorAppointments = lazyPage(() => import("../components/pages/doctor-modules/doctor-appointments/doctorAppointments"));
+const DoctorDahboard = lazyPage(() => import("../components/pages/dashboard/doctor-dashboard/doctorDahboard"));
+const DoctorSchedules = lazyPage(() => import("../components/pages/doctor-modules/doctors-schedules/doctorSchedules"));
+const DoctorsAppointmentDetails = lazyPage(() => import("../components/pages/doctor-modules/doctors-appointment-details/doctorsAppointmentDetails"));
+const DoctorsNotificationSettings = lazyPage(() => import("../components/pages/doctor-modules/doctors-notification-settings/doctorsNotificationSettings"));
+const DoctorsPasswordSettings = lazyPage(() => import("../components/pages/doctor-modules/doctors-password-settings/doctorsPasswordSettings"));
+const DoctorsPrescriptionDetails = lazyPage(() => import("../components/pages/doctor-modules/doctors-prescription-details/doctorsPrescriptionDetails"));
+const DoctorsProfileSettings = lazyPage(() => import("../components/pages/doctor-modules/doctors-profile-settings/doctorsProfileSettings"));
+const DoctorsReviews = lazyPage(() => import("../components/pages/doctor-modules/doctors-reviews/doctorsReviews"));
 
 export const doctorRoutes: RouteObject[] = [
   {

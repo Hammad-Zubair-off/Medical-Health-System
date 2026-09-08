@@ -21,7 +21,7 @@ export const all_routes = {
   //Patient
   patientdetails: "/patient/patient-details",
   patientappointments: "/patient/patient-appointments",
-  patientappointmentdetails: "/patient/patient-appointment-details",
+  patientappointmentdetails: "/patient/patient-appointment-details/:id",
   patientdoctors: "/patient/patient-doctors",
   patientPrescriptions: "/patient/patient-prescriptions",
   patientinvoices: "/patient/patient-invoices",
@@ -43,7 +43,7 @@ export const all_routes = {
   onlineconsultations: "/doctor/online-consultations",
   doctorsappointments: "/doctor/doctors-appointments",
   doctorspatientdetails: "/doctor/doctors-patient-details",
-  doctorsappointmentdetails: "/doctor/doctors-appointment-details",
+  doctorsappointmentdetails: "/doctor/doctors-appointment-details/:id",
   doctorsprescriptiondetails: "/doctor/doctors-prescription-details",
 
   //Super Admin routes
@@ -91,14 +91,14 @@ export const all_routes = {
   //Clinic Pages
   doctors: "/doctors",
   doctorsList: "/doctors-list",
-  doctorsDetails: "/doctor-details",
+  doctorsDetails: "/doctor-details/:id",
   addDoctors: "/add-doctor",
-  editDoctors: "/edit-doctors",
+  editDoctors: "/edit-doctors/:id",
   doctorScheduleClini: "/doctor-schedule",
   patients: "/patients",
   patientsGrid: "/patients-grid",
-  editPatient: "/edit-patient",
-  patientDetails: "/patient-details",
+  editPatient: "/edit-patient/:id",
+  patientDetails: "/patient-details/:id",
   createPatient: "/create-patient",
   appointments: "/appointments",
   newAppointment: "/new-appointment",
@@ -109,7 +109,7 @@ export const all_routes = {
   assets: "/assets",
   activities: "/activities",
   messages: "/messages",
-  appointmentconsultations: "/appointment-consultations",
+  appointmentconsultations: "/appointment-consultations/:id",
 
   //HRM Pages
   staffs: "/staffs",
@@ -220,3 +220,31 @@ export const all_routes = {
   databasebackupsettings: "/database-backup-settings",
   systemupdate: "/system-update",
 };
+
+export function patientDetailsPath(id: string): string {
+  return `/patient-details/${id}`;
+}
+
+export function editPatientPath(id: string): string {
+  return `/edit-patient/${id}`;
+}
+
+export function doctorsDetailsPath(id: string): string {
+  return `/doctor-details/${id}`;
+}
+
+export function editDoctorsPath(id: string): string {
+  return `/edit-doctors/${id}`;
+}
+
+export function appointmentConsultationsPath(id: string): string {
+  return `/appointment-consultations/${id}`;
+}
+
+export function doctorsAppointmentDetailsPath(id: string): string {
+  return `/doctor/doctors-appointment-details/${id}`;
+}
+
+export function patientAppointmentDetailsPath(id: string): string {
+  return `/patient/patient-appointment-details/${id}`;
+}

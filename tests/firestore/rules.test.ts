@@ -41,6 +41,7 @@ describe("Firestore rules", () => {
     await assertFails(getDoc(doc(unauth, "Users", "anyone")));
     await assertFails(getDoc(doc(unauth, "Appointment", "a1")));
     await assertFails(getDoc(doc(unauth, "Doctor", "d1")));
+    await assertFails(getDoc(doc(unauth, "Patient", "p1")));
   });
 
   it("patient cannot read another patient's Users doc", async () => {
@@ -147,6 +148,7 @@ describe("Firestore rules", () => {
       await setDoc(doc(db, "Appointment", "appt1"), {
         doctorUserId: doc(db, "Users", "doc1"),
         UserPatientID: doc(db, "Users", "patientB"),
+        patientId: "PB",
         patientsName: "B",
         status: "pending",
       });
@@ -154,5 +156,182 @@ describe("Firestore rules", () => {
 
     const asA = testEnv.authenticatedContext("patientA").firestore();
     await assertFails(getDoc(doc(asA, "Appointment", "appt1")));
+  });
+
+  describe("Appointment collection (admin / walk-in / patient)", () => {
+    async function seedAppointments() {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, "Users", "admin1"), {
+          uid: "admin1",
+          role: "admin",
+        });
+        await setDoc(doc(db, "Users", "doc1"), {
+          uid: "doc1",
+          role: "doctor",
+        });
+        await setDoc(doc(db, "Users", "patientA"), {
+          uid: "patientA",
+          role: "patient",
+        });
+        await setDoc(doc(db, "Patient", "PA"), {
+          userId: "patientA",
+          displayName: "Patient A",
+          status: "active",
+        });
+        await setDoc(doc(db, "Patient", "PWALK"), {
+          userId: null,
+          displayName: "Walk-in",
+          status: "active",
+        });
+        await setDoc(doc(db, "Appointment", "linked"), {
+          patientId: "PA",
+          UserPatientID: doc(db, "Users", "patientA"),
+          doctorUserId: doc(db, "Users", "doc1"),
+          doctorId: "D1",
+          status: "pending",
+          patientsName: "Patient A",
+        });
+        await setDoc(doc(db, "Appointment", "walkin"), {
+          patientId: "PWALK",
+          UserPatientID: null,
+          doctorUserId: doc(db, "Users", "doc1"),
+          doctorId: "D1",
+          status: "pending",
+          patientsName: "Walk-in",
+        });
+      });
+    }
+
+    it("admin can read any appointment", async () => {
+      await seedAppointments();
+      const asAdmin = testEnv.authenticatedContext("admin1").firestore();
+      await assertSucceeds(getDoc(doc(asAdmin, "Appointment", "linked")));
+      await assertSucceeds(getDoc(doc(asAdmin, "Appointment", "walkin")));
+    });
+
+    it("doctor can read own appointment including walk-in", async () => {
+      await seedAppointments();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertSucceeds(getDoc(doc(asDoc, "Appointment", "walkin")));
+    });
+
+    it("patient can read own linked appointment via patientId", async () => {
+      await seedAppointments();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertSucceeds(getDoc(doc(asA, "Appointment", "linked")));
+    });
+
+    it("patient cannot cancel fields beyond status/cancel_reason", async () => {
+      await seedAppointments();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertFails(
+        updateDoc(doc(asA, "Appointment", "linked"), { diagnosis: "hacked" })
+      );
+      await assertSucceeds(
+        updateDoc(doc(asA, "Appointment", "linked"), {
+          status: "cancelled",
+          cancel_reason: "personal",
+          updated: new Date(),
+          updatedBy: "patientA",
+        })
+      );
+    });
+
+    it("admin can create walk-in appointment with null UserPatientID", async () => {
+      await seedAppointments();
+      const asAdmin = testEnv.authenticatedContext("admin1").firestore();
+      await assertSucceeds(
+        setDoc(doc(asAdmin, "Appointment", "newwalk"), {
+          patientId: "PWALK",
+          UserPatientID: null,
+          doctorUserId: doc(asAdmin, "Users", "doc1"),
+          doctorId: "D1",
+          status: "pending",
+          patientsName: "Walk-in",
+        })
+      );
+    });
+  });
+
+  describe("Patient collection (doctor↔patient join)", () => {
+    async function seedClinic() {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, "Users", "doc1"), {
+          uid: "doc1",
+          role: "doctor",
+          email: "d@example.com",
+        });
+        await setDoc(doc(db, "Users", "patientA"), {
+          uid: "patientA",
+          role: "patient",
+          email: "a@example.com",
+        });
+        await setDoc(doc(db, "Users", "patientB"), {
+          uid: "patientB",
+          role: "patient",
+          email: "b@example.com",
+        });
+        await setDoc(doc(db, "Patient", "PA"), {
+          userId: "patientA",
+          displayName: "Patient A",
+          status: "active",
+        });
+        await setDoc(doc(db, "Patient", "PB"), {
+          userId: "patientB",
+          displayName: "Patient B",
+          status: "active",
+        });
+      });
+    }
+
+    it("doctor CAN read a Patient doc", async () => {
+      await seedClinic();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertSucceeds(getDoc(doc(asDoc, "Patient", "PA")));
+    });
+
+    it("doctor CANNOT read an unrelated Users doc", async () => {
+      await seedClinic();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertFails(getDoc(doc(asDoc, "Users", "patientA")));
+    });
+
+    it("patient CAN read their own Patient doc", async () => {
+      await seedClinic();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertSucceeds(getDoc(doc(asA, "Patient", "PA")));
+    });
+
+    it("patient CANNOT read another patient's Patient doc", async () => {
+      await seedClinic();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertFails(getDoc(doc(asA, "Patient", "PB")));
+    });
+
+    it("signed-out CANNOT read any Patient doc", async () => {
+      await seedClinic();
+      const unauth = testEnv.unauthenticatedContext().firestore();
+      await assertFails(getDoc(doc(unauth, "Patient", "PA")));
+    });
+
+    it("linked patient cannot change their own status", async () => {
+      await seedClinic();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertFails(updateDoc(doc(asA, "Patient", "PA"), { status: "inactive" }));
+    });
+
+    it("doctor can create a Patient doc", async () => {
+      await seedClinic();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertSucceeds(
+        setDoc(doc(asDoc, "Patient", "PNEW"), {
+          userId: null,
+          displayName: "Walk-in",
+          status: "active",
+        })
+      );
+    });
   });
 });

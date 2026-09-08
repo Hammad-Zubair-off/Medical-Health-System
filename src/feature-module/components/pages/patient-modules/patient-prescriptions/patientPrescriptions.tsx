@@ -35,7 +35,7 @@ const PatientPrescriptions = () => {
       render: (text: any, render: any) => (
         <div className="d-flex align-items-center">
           <Link
-            to={all_routes.patientappointmentdetails}
+            to={all_routes.patientappointments}
             className="avatar avatar-md me-2"
           >
             <ImageWithBasePath
@@ -45,7 +45,7 @@ const PatientPrescriptions = () => {
             />
           </Link>
           <Link
-            to={all_routes.patientappointmentdetails}
+            to={all_routes.patientappointments}
             className="text-dark fw-semibold"
           >
             {text}

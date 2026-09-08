@@ -1,16 +1,28 @@
+import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router";
 import AuthFeature from "../feathure-components/authFeature";
-import Feature from "../feathure-components/feature";
 import Error403 from "../components/auth/error-modules/error403";
 import Error404 from "../components/auth/error-modules/error404";
-import { adminRoutes } from "./admin.routes";
 import { authOpenRoutes, authPublicOnlyRoutes } from "./auth.routes";
-import { doctorRoutes } from "./doctor.routes";
-import { patientRoutes } from "./patient.routes";
-import { sharedRoutes } from "./shared.routes";
 import ProtectedRoute from "./guards/ProtectedRoute";
 import PublicOnlyRoute from "./guards/PublicOnlyRoute";
 import RoleLanding from "./guards/RoleLanding";
+import { PageSplash } from "./lazyPage";
+import { adminRoutes } from "./admin.routes";
+import { doctorRoutes } from "./doctor.routes";
+import { patientRoutes } from "./patient.routes";
+import { sharedRoutes } from "./shared.routes";
+
+/** Heavy shell (header/sidebars) — only load after auth, not on /login. */
+const Feature = lazy(() => import("../feathure-components/feature"));
+
+function FeatureLayout() {
+  return (
+    <Suspense fallback={<PageSplash />}>
+      <Feature />
+    </Suspense>
+  );
+}
 
 const ALLRoutes: React.FC = () => {
   return (
@@ -40,7 +52,7 @@ const ALLRoutes: React.FC = () => {
       </Route>
 
       <Route element={<ProtectedRoute allow={["admin"]} />}>
-        <Route element={<Feature />}>
+        <Route element={<FeatureLayout />}>
           {adminRoutes.map((route, idx) => (
             <Route path={route.path} element={route.element} key={`admin-${idx}`} />
           ))}
@@ -48,7 +60,7 @@ const ALLRoutes: React.FC = () => {
       </Route>
 
       <Route element={<ProtectedRoute allow={["doctor"]} />}>
-        <Route element={<Feature />}>
+        <Route element={<FeatureLayout />}>
           {doctorRoutes.map((route, idx) => (
             <Route
               path={route.path}
@@ -60,7 +72,7 @@ const ALLRoutes: React.FC = () => {
       </Route>
 
       <Route element={<ProtectedRoute allow={["patient"]} />}>
-        <Route element={<Feature />}>
+        <Route element={<FeatureLayout />}>
           {patientRoutes.map((route, idx) => (
             <Route
               path={route.path}
@@ -72,7 +84,7 @@ const ALLRoutes: React.FC = () => {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        <Route element={<Feature />}>
+        <Route element={<FeatureLayout />}>
           {sharedRoutes.map((route, idx) => (
             <Route
               path={route.path}

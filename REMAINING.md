@@ -16,34 +16,50 @@ possible — fill it in before you do.
 
 ---
 
-## State at hand-off — FILL THIS IN BEFORE ASKING FOR THE NEXT PLAN
+## State at hand-off
 
 ```
-Phase A completed on:            ____________________
-Firebase project ID now in use:  ____________________
-Definition-of-Done items passed: ___ / 11
+Phase A completed on:            2026 (commit 5c8c68c)
+Firebase project ID now in use:  medical-health-system-dev
+Definition-of-Done items passed: 11 / 11 (Phase A)
 
-Deviations from AUTH_RBAC_PLAN.md (what you did differently, and why):
-  -
-  -
+Phase B (Patients + Doctors data migration) completed in this working tree.
+  - Patient collection + rules + list/grid/detail/create/edit
+  - Doctor + Specialization collections + list/grid/detail/add/edit
+  - Doctor Auth provisioning: option (c) Console UID paste (see docs/DATA_LAYER.md)
+
+Appointments domain completed (see docs/DATA_MIGRATION_APPOINTMENTS.md):
+  - Admin list / new / calendar / consultations `:id`
+  - Patient list / detail `:id` with ownership checks
+  - Doctor details `:id`; doctor list/dashboard still on Firestore
+  - `patientId` required; walk-in `UserPatientID` null; soft-cancel
+  - Remaining core/json files: 39
+  - Remaining components importing core/json: ~37
+
+Deviations from AUTH_RBAC_PLAN.md:
+  - Cover/Illustration auth variants and ui-modules were deleted in Phase A
 
 Deleted during Phase A?
-  [ ] *Cover / *Illustration auth variants (Step 4.9)
-  [ ] ui-modules template demo pages (Step 5.6)
+  [x] *Cover / *Illustration auth variants (Step 4.9)
+  [x] ui-modules template demo pages (Step 5.6)
   [ ] Social login buttons (Step 4.6)
 
-Still broken / known-bad after Phase A:
-  -
-  -
+Still broken / known-bad:
+  - Patient details / doctor details inner tabs (prescriptions, education) still template mockup
+  - Appointment report still uses appointmentReportData JSON (Reports domain)
+  - lastVisit backfill for historical appointments not run
+  - Doctor list → calendar view toggle is a no-op (details need `:id`)
 
-What do you want to ship next, in business terms? (e.g. "patients can book an appointment
-online", "admin can add a doctor", "invoicing"):
-  -
+What do you want to ship next, in business terms?
+  - Prescriptions per Group 1 priority 4
 ```
 
 ---
 
 ## Group 1 — Data migration (the biggest remaining chunk)
+
+> **▶ NEXT — Prescriptions (priority 4).** Patients, Doctors, and Appointments are done.
+> Follow `docs/DATA_LAYER.md`. Plan file for appointments: `docs/DATA_MIGRATION_APPOINTMENTS.md`.
 
 **The core problem:** 47 files in `src/core/json/` are hard-coded arrays, imported directly by
 44 page components. Forms across these modules have no submit handlers and no persistence.
@@ -60,9 +76,9 @@ Suggested priority (confirm against your answer in "State at hand-off"):
 
 | Priority | Domain | Static files involved |
 |---|---|---|
-| 1 | **Patients** — list, grid, details, create, edit | `patientListData`, `patientDeatilsData`, `patientsGrid` |
-| 2 | **Doctors** — list, details, add, edit, specializations, schedules | `doctorsListData`, `specializationListData` |
-| 3 | **Appointments (finish)** — the admin/clinic-side views, calendar, consultations | `appointmentsData`, `doctorAppointmentsData`, `patientAppointmentsData` |
+| ~~1~~ | ~~**Patients**~~ — **done (Phase B)** | ~~`patientListData`, `patientDeatilsData`~~ deleted |
+| ~~2~~ | ~~**Doctors / Specializations**~~ — **done (Phase B)** | ~~`doctorsListData`, `specializationListData`, `patientDoctorsData`~~ deleted |
+| ~~3~~ | ~~**Appointments (finish)**~~ — **done** | ~~`appointmentsData`, `doctorAppointmentsData`, `patientAppointmentsData`~~ deleted (`appointmentReportData` left for Reports) |
 | 4 | **Prescriptions** | `doctorPrescriptionsData`, `patientPrescriptionsData` |
 | 5 | **Finance** — invoices, payments, expenses, income, transactions | `invoicesData`, `paymetsListData`, `expensesListData`, `incomeListData`, `transactionsListData`, `expenseCategoryData` |
 | 6 | **HRM** — staff, payroll, leaves, departments, designations, holidays, attendance | `staffsListData`, `payrollListData`, `leavesListData`, `leaveTypeData`, `hrmDepartmentsData`, `designationData`, `holidaysListData`, `doctorLeavesData` |
