@@ -13,8 +13,8 @@ import {
   doc,
   serverTimestamp,
 } from "firebase/firestore";
-// @ts-expect-error - Firebase config file (JS file, no types)
 import { db } from "../../../firebase";
+import { auth } from "../../../firebase";
 import { isHoliday } from "./doctor.service";
 
 // Appointment interface matching Firestore schema
@@ -349,7 +349,11 @@ export const updateAppointment = async (
       }
     }
 
-    await updateDoc(appointmentRef, updateData);
+    await updateDoc(appointmentRef, {
+      ...updateData,
+      updated: serverTimestamp(),
+      updatedBy: auth.currentUser?.uid ?? null,
+    });
   } catch (error) {
     console.error("Error updating appointment:", error);
     throw error;

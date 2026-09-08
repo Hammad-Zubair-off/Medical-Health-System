@@ -1,5 +1,8 @@
 # Codebase Analysis & Architecture Review
 
+> ⚠️ **Stale:** This document predates Phase A (Auth & RBAC). Prefer `docs/AUTH.md`,
+> `README.md`, and `AUTH_RBAC_PLAN.md` for current auth/routing facts.
+
 ## 📁 **FOLDER STRUCTURE OVERVIEW**
 
 ```

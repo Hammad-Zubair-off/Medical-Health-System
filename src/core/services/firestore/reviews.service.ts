@@ -7,7 +7,6 @@ import {
   DocumentReference,
   doc,
 } from "firebase/firestore";
-// @ts-expect-error - Firebase config file (JS file, no types)
 import { db } from "../../../firebase";
 import { getPatientData } from "./appointments.service";
 

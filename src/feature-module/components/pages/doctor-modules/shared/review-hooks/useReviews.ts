@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import type { Review, ReviewFilters } from "../review-types";
 import { getDoctorReviews, type FirestoreReview } from "../../../../../../core/services/firestore/reviews.service";
-import { useUser } from "../../../../../../core/context/UserContext";
+import { useAuth } from "../../../../../../core/context/AuthContext";
 import { Timestamp } from "firebase/firestore";
 
 export interface UseReviewsReturn {
@@ -75,7 +75,7 @@ const convertFirestoreToReview = (
 };
 
 export const useReviews = (): UseReviewsReturn => {
-  const { doctorUserId } = useUser();
+  const { doctorUserId } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

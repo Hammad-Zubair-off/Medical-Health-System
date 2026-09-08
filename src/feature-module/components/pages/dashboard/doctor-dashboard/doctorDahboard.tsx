@@ -15,11 +15,12 @@ import AppointmentStatistics from "./components/AppointmentStatistics";
 import TopPatients from "./components/TopPatients";
 import { all_routes } from "../../../../routes/all_routes";
 import { useDoctorDashboard } from "./hooks/useDoctorDashboard";
-import { useUser } from "../../../../../core/context/UserContext";
+import { useAuth } from "../../../../../core/context/AuthContext";
 
 const DoctorDahboard = () => {
   const navigate = useNavigate();
-  const { doctorUserId, loading: userLoading } = useUser();
+  const { doctorUserId, status } = useAuth();
+  const userLoading = status === "loading";
   const {
     appointments,
     appointmentsWithPatients,

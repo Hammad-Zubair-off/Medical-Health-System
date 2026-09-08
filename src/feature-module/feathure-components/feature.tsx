@@ -1,14 +1,14 @@
 import { useSelector } from "react-redux";
-import { Outlet, useLocation } from "react-router";
+import { Outlet } from "react-router";
 import Header from "../../core/common/header/header";
 import ThemeSettings from "../../core/common/theme-settings";
 import Sidebar from "../../core/common/sidebar/sidebar";
 import SidebarTwo from "../../core/common/sidebar-two/sidebarTwo";
 import Sidebarthree from "../../core/common/sidebarthree/sidebarthree";
+import { useAuth } from "../../core/context/AuthContext";
 
 const Feature = () => {
-  const locations = useLocation();
-  const path = locations.pathname;
+  const { role } = useAuth();
 
   const themeSettings = useSelector((state: any) => state.theme.themeSettings);
   const { miniSidebar, mobileSidebar, expandMenu } = useSelector(
@@ -19,6 +19,15 @@ const Feature = () => {
   const dataWidth = themeSettings["data-width"];
   const dataSize = themeSettings["data-size"];
   const dir = themeSettings["dir"];
+
+  const sidebar =
+    role === "doctor" ? (
+      <SidebarTwo />
+    ) : role === "patient" ? (
+      <Sidebarthree />
+    ) : (
+      <Sidebar />
+    );
 
   return (
     <>
@@ -40,19 +49,11 @@ const Feature = () => {
 
 
 
-
       `}
       >
         <div className="main-wrapper">
           <Header />
-          {path.startsWith("/doctor/") ? (
-            <SidebarTwo />
-          ) : path.startsWith("/patient/") ? (
-            <Sidebarthree />
-          ) : (
-            <Sidebar />
-          )}
-
+          {sidebar}
           <ThemeSettings />
           <Outlet />
         </div>

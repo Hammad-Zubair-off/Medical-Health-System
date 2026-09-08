@@ -1,54 +1,88 @@
-# React + TypeScript + Vite
+# Medical Health System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Hospital management web app (React + TypeScript + Vite + Firebase).
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Node.js 20+
+- A Firebase project with **Email/Password** Auth and **Firestore** enabled
+- Firebase CLI (`npm i -g firebase-tools`) for rules deploy / emulators
 
-## Expanding the ESLint configuration
+## Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Copy env template and fill values from Firebase Console → Project settings → Your apps:
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+cp .env.example .env.local
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Required keys:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
 ```
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+2. Install and run:
+
+```bash
+npm i
+npm run dev
+```
+
+3. (Optional) Seed demo users — download a service account key to
+   `scripts/serviceAccountKey.json` (gitignored), then:
+
+```bash
+npm run seed
+```
+
+## Auth & roles
+
+See [docs/AUTH.md](docs/AUTH.md).
+
+Roles: `admin`, `doctor`, `patient`. Self-registration creates **patients only**.
+
+### Test accounts (after seed)
+
+| Role | Email | Password |
+|---|---|---|
+| admin | admin@example.com | Admin123! |
+| doctor | doctor@example.com | Doctor123! |
+| patient | patient@example.com | Patient123! |
+
+Change these passwords after first login.
+
+## Firestore rules
+
+```bash
+# Start emulator
+npm run emulators
+
+# In another terminal — run rules tests
+npm run test:rules
+
+# Deploy rules to the linked project (after bootstrap admin exists)
+firebase deploy --only firestore:rules
+```
+
+## Bootstrap first admin (manual)
+
+Rules only allow an existing admin to create other admins. Once:
+
+1. Authentication → Add user (email/password)
+2. Firestore → create `Users/{thatUid}` with fields:
+   - `uid` (same as Auth uid)
+   - `role`: `"admin"`
+   - `display_name`, `email`
+3. Then deploy restrictive rules if not already deployed
+
+## Docs
+
+- Auth model & promotion: `docs/AUTH.md`
+- Deferred backlog: `REMAINING.md`
+- Phase A plan: `AUTH_RBAC_PLAN.md`

@@ -1,15 +1,25 @@
 /* eslint-disable */
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ImageWithBasePath from "../../imageWithBasePath";
 import { useEffect, useState } from "react";
 import { updateTheme } from "../../redux/themeSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { setMobileSidebar } from "../../redux/sidebarSlice";
 import { all_routes } from "../../../feature-module/routes/all_routes";
+import { signOutUser } from "../../services/auth/auth.service";
 
 const Header = () => {
-
+  const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await signOutUser();
+    } finally {
+      navigate(all_routes.login, { replace: true });
+    }
+  };
   const themeSettings = useSelector((state: any) => state.theme.themeSettings);
   const [isHiddenLayoutActive, setIsHiddenLayoutActive] = useState(() => {
     const saved = localStorage.getItem("hiddenLayoutActive");
@@ -489,10 +499,14 @@ const Header = () => {
                 </Link>
                 {/* Item*/}
                 <div className="pt-2 mt-2 border-top">
-                  <Link to={all_routes.login}className="dropdown-item text-danger">
+                  <button
+                    type="button"
+                    className="dropdown-item text-danger"
+                    onClick={handleLogout}
+                  >
                     <i className="ti ti-logout me-1 fs-17 align-middle" />
                     <span className="align-middle">Log Out</span>
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>

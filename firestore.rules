@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myRole() {
+      return get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role;
+    }
+
+    function hasRole(r) {
+      return isSignedIn() && myRole() == r;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return hasRole("admin");
+    }
+
+    function userRef() {
+      return /databases/$(database)/documents/Users/$(request.auth.uid);
+    }
+
+    function doctorOwnsDoc() {
+      return isSignedIn()
+        && resource.data.keys().hasAny(["userid"])
+        && resource.data.userid == userRef();
+    }
+
+    function appointmentReadable() {
+      return isAdmin()
+        || (isSignedIn()
+            && resource.data.keys().hasAny(["doctorUserId"])
+            && (resource.data.doctorUserId == userRef()
+                || resource.data.doctorUserId == request.auth.uid))
+        || (isSignedIn()
+            && resource.data.keys().hasAny(["UserPatientID"])
+            && (resource.data.UserPatientID == userRef()
+                || resource.data.UserPatientID == request.auth.uid));
+    }
+
+    match /Users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid)
+        && request.resource.data.role == "patient"
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin()
+        || (isSelf(uid) && request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
+    }
+
+    match /Doctor/{id} {
+      allow read: if isSignedIn();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || doctorOwnsDoc();
+    }
+
+    match /Appointment/{id} {
+      allow read: if appointmentReadable();
+      allow create: if isAdmin()
+        || hasRole("doctor")
+        || (hasRole("patient")
+            && request.resource.data.UserPatientID == userRef());
+      allow update: if isAdmin()
+        || (isSignedIn()
+            && resource.data.keys().hasAny(["doctorUserId"])
+            && (resource.data.doctorUserId == userRef()
+                || resource.data.doctorUserId == request.auth.uid))
+        || (hasRole("patient")
+            && resource.data.keys().hasAny(["UserPatientID"])
+            && resource.data.UserPatientID == userRef()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(["status", "updated", "updatedBy"]));
+      allow delete: if isAdmin();
+    }
+
+    match /Review/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || hasRole("doctor") || hasRole("patient");
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,5 +1,4 @@
 import { collection, getDocs, query, where, Timestamp, doc, getDoc } from "firebase/firestore";
-// @ts-expect-error - Firebase config file (JS file, no types)
 import { db } from "../../../firebase";
 import type { FirestoreAppointment } from "./appointments.service";
 import type { DoctorData } from "./doctor.service";
