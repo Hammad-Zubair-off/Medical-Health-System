@@ -199,9 +199,12 @@ const SidebarTwo = () => {
                   </li>
                   <li
                     className={
-                      isActive(all_routes.doctorsprescriptions)
-                        ? "active"
-                        : isActive(all_routes.doctorsprescriptiondetails)
+                      isActive(all_routes.doctorsprescriptions) ||
+                      location.pathname.startsWith(
+                        "/doctor/doctors-prescription-details"
+                      ) ||
+                      location.pathname.startsWith("/doctor/add-prescription") ||
+                      location.pathname.startsWith("/doctor/edit-prescription")
                         ? "active"
                         : ""
                     }
@@ -219,6 +222,21 @@ const SidebarTwo = () => {
                     <Link to={all_routes.doctorleaves}>
                       <i className="ti ti-calendar-x" />
                       <span>Leave</span>
+                    </Link>
+                  </li>
+                  <li
+                    className={
+                      isActive(all_routes.fileManager) ||
+                      location.pathname.startsWith(
+                        "/application/file-manager/"
+                      )
+                        ? "active"
+                        : ""
+                    }
+                  >
+                    <Link to={all_routes.fileManager}>
+                      <i className="ti ti-folder" />
+                      <span>File Manager</span>
                     </Link>
                   </li>
                   <li

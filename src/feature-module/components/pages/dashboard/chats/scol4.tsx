@@ -1,8 +1,14 @@
-import { useState } from "react";
 import Chart from "react-apexcharts";
 
-const SCol4Chart = () => {
-  const [chartOptions] = useState<any>({
+type Props = {
+  data?: number[];
+};
+
+const SCol4Chart = ({ data }: Props) => {
+  const seriesData =
+    data && data.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
+
+  const chartOptions: Record<string, unknown> = {
     chart: {
       width: 100,
       height: 54,
@@ -23,16 +29,8 @@ const SCol4Chart = () => {
         opacityTo: 0,
         stops: [0, 90, 100],
         colorStops: [
-          {
-            offset: 0,
-            color: "#008073",
-            opacity: 0.4,
-          },
-          {
-            offset: 100,
-            color: "#ffffff",
-            opacity: 0.1,
-          },
+          { offset: 0, color: "#008073", opacity: 0.4 },
+          { offset: 100, color: "#ffffff", opacity: 0.1 },
         ],
       },
     },
@@ -45,20 +43,13 @@ const SCol4Chart = () => {
     yaxis: { show: false },
     grid: { show: false },
     tooltip: { enabled: false },
-  });
-
-  const [series] = useState([
-    {
-      name: "Data",
-      data: [20, 12, 9, 14, 18, 25, 30, 28, 35, 40],
-    },
-  ]);
+  };
 
   return (
     <div id="s-col-4">
       <Chart
         options={chartOptions}
-        series={series}
+        series={[{ name: "Data", data: seriesData }]}
         type="area"
         width={100}
         height={54}

@@ -28,7 +28,16 @@ const Sidebarthree = () => {
     }));
   }, [location.pathname, routes]);
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path.includes(":")) {
+      const prefix = path.split("/:")[0];
+      return (
+        location.pathname === prefix ||
+        location.pathname.startsWith(`${prefix}/`)
+      );
+    }
+    return location.pathname === path;
+  };
 
   const handleToggle = (menu: string) => {
     setOpenSubmenus((prev) => ({
@@ -150,7 +159,9 @@ const Sidebarthree = () => {
                   <li
                     className={
                       isActive(routes.patientPrescriptions) ||
-                      isActive(routes.patientprescriptiondetails)
+                      location.pathname.startsWith(
+                        "/patient/patient-prescription-details"
+                      )
                         ? "active"
                         : ""
                     }
@@ -171,6 +182,21 @@ const Sidebarthree = () => {
                     <Link to={routes.patientinvoices}>
                       <i className="ti ti-star" />
                       <span>Invoice</span>
+                    </Link>
+                  </li>
+                  <li
+                    className={
+                      isActive(routes.fileManager) ||
+                      location.pathname.startsWith(
+                        "/application/file-manager/"
+                      )
+                        ? "active"
+                        : ""
+                    }
+                  >
+                    <Link to={routes.fileManager}>
+                      <i className="ti ti-folder" />
+                      <span>File Manager</span>
                     </Link>
                   </li>
                   <li

@@ -370,12 +370,7 @@ const Sidebar = () => {
                                           }`}
                                           onClick={() => {
                                             toggleSubsidebar(item?.label);
-                                            if (title?.label === "Layouts") {
-                                              handleLayoutClick(item?.label);
-                                            }
                                           }}
-
-
                                         >
                                           {item?.label}
                                           {(item?.submenu ||
