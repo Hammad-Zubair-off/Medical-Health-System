@@ -1,313 +1,81 @@
-import { Link } from "react-router";
+import { type FormEvent, useEffect, useState } from "react";
 import SettingsSidebar from "../../../../../../core/common/settings-sidebar/settingsSidebar";
-import Modals from "./modals/modals";
+import { useClinicSettings } from "../../../../../../core/hooks/useClinicSettings";
+import type { PreferencesSettings } from "../../../../../../core/types/clinic-settings.types";
 
-const PreferencesSettings = () => {
+const PreferencesSettingsPage = () => {
+  const { settings, loading, saving, error, save } = useClinicSettings();
+  const [form, setForm] = useState<PreferencesSettings | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings) setForm({ ...settings.preferences });
+  }, [settings]);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    setSuccess(null);
+    await save({ preferences: form });
+    setSuccess("Preferences saved. Reload to apply menu visibility changes.");
+  };
+
   return (
-    <>
-      {/* ========================
-			Start Page Content
-		========================= */}
-      <div className="page-wrapper">
-        {/* Start Content */}
-        <div className="content" id="profilePage">
-          {/* Page Header */}
-          <div className="mb-3 border-bottom pb-3">
-            <h4 className="fw-bold mb-0">Settings</h4>
-          </div>
-          {/* End Page Header */}
-          <div className="card">
-            <div className="card-body p-0">
-              <div className="settings-wrapper d-flex">
-                {/* Start Settings Sidebar */}
-                <SettingsSidebar />
-                {/* End Settings Sidebar */}
-                <div className="card flex-fill mb-0 border-0 bg-light-500 shadow-none">
-                  <div className="card-header border-bottom px-0 mx-3">
-                    <div className="d-flex">
-                      <h5 className="fw-bold">Preferences</h5>
-                    </div>
-                  </div>
-                  <div className="card-body px-0 mx-3">
-                    {/* start row */}
-                    <div className="row">
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Doctors
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
+    <div className="page-wrapper">
+      <div className="content">
+        <div className="mb-3 border-bottom pb-3">
+          <h4 className="fw-bold mb-0">Settings</h4>
+        </div>
+        <div className="card">
+          <div className="card-body p-0">
+            <div className="settings-wrapper d-flex">
+              <SettingsSidebar />
+              <div className="card flex-fill mb-0 border-0 bg-light-500 shadow-none">
+                <div className="card-header border-bottom px-0 mx-3">
+                  <h5 className="fw-bold">Preferences</h5>
+                </div>
+                <div className="card-body px-0 mx-3">
+                  {error && <div className="alert alert-danger">{error}</div>}
+                  {success && <div className="alert alert-success">{success}</div>}
+                  {loading || !form ? (
+                    <p>Loading…</p>
+                  ) : (
+                    <form onSubmit={(e) => void onSubmit(e)}>
+                      <div className="d-flex align-items-center justify-content-between border-bottom py-3">
+                        <div>
+                          <p className="mb-0 fw-medium">Hide Applications menu</p>
+                          <p className="text-muted fs-13 mb-0">
+                            Template chat/calls/email apps are removed from the
+                            sidebar when enabled (default).
+                          </p>
                         </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Patients
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
+                        <div className="form-check form-switch">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={form.hideApplicationsMenu}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                hideApplicationsMenu: e.target.checked,
+                              })
+                            }
+                          />
                         </div>
-                        {/* end card */}
                       </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Appointments
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Locations
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">Visits</p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Services
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Designations
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Departments
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Activities
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Reports
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">Staffs</p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                      <div className="col-md-6 col-xl-4">
-                        <div className="card shadow-none">
-                          <div className="card-body">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <p className="text-dark fw-medium mb-0">
-                                Invoices
-                              </p>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input m-0"
-                                  type="checkbox"
-                                  defaultChecked
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* end card body */}
-                        </div>
-                        {/* end card */}
-                      </div>
-                      {/* end col */}
-                    </div>
-                    {/* end row */}
-                  </div>
+                      <button type="submit" className="btn btn-primary mt-3" disabled={saving}>
+                        {saving ? "Saving…" : "Save Changes"}
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             </div>
-            {/* end card body */}
           </div>
-          {/* end card */}
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
-        <div className="footer text-center bg-white p-2 border-top">
-          <p className="text-dark mb-0">
-            2025 ©
-            <Link to="#" className="link-primary">
-              Doctoury
-            </Link>
-            , All Rights Reserved
-          </p>
-        </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
-      <Modals />
-    </>
+    </div>
   );
 };
 
-export default PreferencesSettings;
+export default PreferencesSettingsPage;

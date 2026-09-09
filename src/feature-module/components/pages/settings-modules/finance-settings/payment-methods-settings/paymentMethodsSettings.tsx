@@ -1,368 +1,90 @@
-import { Link } from "react-router"
-import SettingsSidebar from "../../../../../../core/common/settings-sidebar/settingsSidebar"
-import Modals from "./modals/modals"
+import { type FormEvent, useEffect, useState } from "react";
+import SettingsSidebar from "../../../../../../core/common/settings-sidebar/settingsSidebar";
+import { useClinicSettings } from "../../../../../../core/hooks/useClinicSettings";
+import type { PaymentMethodsSettings } from "../../../../../../core/types/clinic-settings.types";
 
+const LABELS: { key: keyof PaymentMethodsSettings; label: string }[] = [
+  { key: "cash", label: "Cash" },
+  { key: "card", label: "Card (in-clinic)" },
+  { key: "bankTransfer", label: "Bank transfer" },
+  { key: "insurance", label: "Insurance" },
+  { key: "other", label: "Other" },
+];
 
-const PaymentMethodsSettings = () => {
+const PaymentMethodsSettingsPage = () => {
+  const { settings, loading, saving, error, save } = useClinicSettings();
+  const [methods, setMethods] = useState<PaymentMethodsSettings | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings) setMethods({ ...settings.paymentMethods });
+  }, [settings]);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!methods) return;
+    setSuccess(null);
+    await save({ paymentMethods: methods });
+    setSuccess("Payment method flags saved.");
+  };
+
   return (
-    <>
-  {/* ========================
-			Start Page Content
-		========================= */}
-  <div className="page-wrapper">
-    {/* Start Content */}
-    <div className="content" id="profilePage">
-      {/* Page Header */}
-      <div className="mb-3 border-bottom pb-3">
-        <h4 className="fw-bold mb-0">Settings</h4>
-      </div>
-      {/* End Page Header */}
-      <div className="card">
-        <div className="card-body p-0">
-          <div className="settings-wrapper d-flex">
-            {/* Start Settings Sidebar */}
-            <SettingsSidebar/>
-            {/* End Settings Sidebar */}
-            <div className="card flex-fill mb-0 border-0 bg-light-500 shadow-none">
-              <div className="card-header border-bottom px-0 mx-3">
-                <div className="d-flex align-items-center justify-content-between">
+    <div className="page-wrapper">
+      <div className="content">
+        <div className="mb-3 border-bottom pb-3">
+          <h4 className="fw-bold mb-0">Settings</h4>
+        </div>
+        <div className="card">
+          <div className="card-body p-0">
+            <div className="settings-wrapper d-flex">
+              <SettingsSidebar />
+              <div className="card flex-fill mb-0 border-0 bg-light-500 shadow-none">
+                <div className="card-header border-bottom px-0 mx-3">
                   <h5 className="fw-bold">Payment Methods</h5>
-                  <Link
-                    to="#"
-                    className="btn btn-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#add_reason"
-                  >
-                    <i className="ti ti-plus me-1" />
-                    New Payment Method
-                  </Link>
                 </div>
-              </div>
-              <div className="card-body px-0 mx-3">
-                {/* Table List */}
-                <div className="table-responsive border">
-                  <table className="table table-nowrap">
-                    <thead className="tablehead-light">
-                      <tr>
-                        <th>Name</th>
-                        <th>Created On</th>
-                        <th>Status</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Cash</td>
-                        <td>30 Apr 2025</td>
-                        <td>
-                          <span className="badge bg-soft-success fs-13 fw-medium text-success border border-success py-1 px-2">
-                            Active
-                          </span>
-                        </td>
-                        <td className="action-item">
-                          <Link
-                            to="#"
-                            data-bs-toggle="dropdown"
-                            className="btn p-1 btn-white border"
-                          >
-                            <i className="ti ti-dots-vertical" />
-                          </Link>
-                          <ul className="dropdown-menu p-2">
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#edit_reason"
-                              >
-                                Edit
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete_reason"
-                              >
-                                Delete
-                              </Link>
-                            </li>
-                          </ul>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Cheque</td>
-                        <td>15 Apr 2025</td>
-                        <td>
-                          <span className="badge bg-soft-success fs-13 fw-medium text-success border border-success py-1 px-2">
-                            Active
-                          </span>
-                        </td>
-                        <td className="action-item">
-                          <Link
-                            to="#"
-                            data-bs-toggle="dropdown"
-                            className="btn p-1 btn-white border"
-                          >
-                            <i className="ti ti-dots-vertical" />
-                          </Link>
-                          <ul className="dropdown-menu p-2">
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#edit_reason"
-                              >
-                                Edit
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete_reason"
-                              >
-                                Delete
-                              </Link>
-                            </li>
-                          </ul>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Debit Card</td>
-                        <td>02 Apr 2025</td>
-                        <td>
-                          <span className="badge bg-soft-success fs-13 fw-medium text-success border border-success py-1 px-2">
-                            Active
-                          </span>
-                        </td>
-                        <td className="action-item">
-                          <Link
-                            to="#"
-                            data-bs-toggle="dropdown"
-                            className="btn p-1 btn-white border"
-                          >
-                            <i className="ti ti-dots-vertical" />
-                          </Link>
-                          <ul className="dropdown-menu p-2">
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#edit_reason"
-                              >
-                                Edit
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete_reason"
-                              >
-                                Delete
-                              </Link>
-                            </li>
-                          </ul>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Direct Deposit</td>
-                        <td>27 Mar 2025</td>
-                        <td>
-                          <span className="badge bg-soft-success fs-13 fw-medium text-success border border-success py-1 px-2">
-                            Active
-                          </span>
-                        </td>
-                        <td className="action-item">
-                          <Link
-                            to="#"
-                            data-bs-toggle="dropdown"
-                            className="btn p-1 btn-white border"
-                          >
-                            <i className="ti ti-dots-vertical" />
-                          </Link>
-                          <ul className="dropdown-menu p-2">
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#edit_reason"
-                              >
-                                Edit
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete_reason"
-                              >
-                                Delete
-                              </Link>
-                            </li>
-                          </ul>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Gift Voucher</td>
-                        <td>12 Mar 2025</td>
-                        <td>
-                          <span className="badge bg-soft-success fs-13 fw-medium text-success border border-success py-1 px-2">
-                            Active
-                          </span>
-                        </td>
-                        <td className="action-item">
-                          <Link
-                            to="#"
-                            data-bs-toggle="dropdown"
-                            className="btn p-1 btn-white border"
-                          >
-                            <i className="ti ti-dots-vertical" />
-                          </Link>
-                          <ul className="dropdown-menu p-2">
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#edit_reason"
-                              >
-                                Edit
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete_reason"
-                              >
-                                Delete
-                              </Link>
-                            </li>
-                          </ul>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Master Card</td>
-                        <td>12 Mar 2025</td>
-                        <td>
-                          <span className="badge bg-soft-success fs-13 fw-medium text-success border border-success py-1 px-2">
-                            Active
-                          </span>
-                        </td>
-                        <td className="action-item">
-                          <Link
-                            to="#"
-                            data-bs-toggle="dropdown"
-                            className="btn p-1 btn-white border"
-                          >
-                            <i className="ti ti-dots-vertical" />
-                          </Link>
-                          <ul className="dropdown-menu p-2">
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#edit_reason"
-                              >
-                                Edit
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete_reason"
-                              >
-                                Delete
-                              </Link>
-                            </li>
-                          </ul>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>Visa</td>
-                        <td>05 Mar 2025</td>
-                        <td>
-                          <span className="badge bg-soft-danger fs-13 fw-medium text-danger border border-danger py-1 px-2">
-                            Inactive
-                          </span>
-                        </td>
-                        <td className="action-item">
-                          <Link
-                            to="#"
-                            data-bs-toggle="dropdown"
-                            className="btn p-1 btn-white border"
-                          >
-                            <i className="ti ti-dots-vertical" />
-                          </Link>
-                          <ul className="dropdown-menu p-2">
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#edit_reason"
-                              >
-                                Edit
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                to="#"
-                                className="dropdown-item d-flex align-items-center"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete_reason"
-                              >
-                                Delete
-                              </Link>
-                            </li>
-                          </ul>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div className="card-body px-0 mx-3">
+                  {error && <div className="alert alert-danger">{error}</div>}
+                  {success && <div className="alert alert-success">{success}</div>}
+                  <div className="alert alert-info">
+                    These flags control which methods staff can select when
+                    recording payments. Online gateways (Stripe/PayPal) are not
+                    available.
+                  </div>
+                  {loading || !methods ? (
+                    <p>Loading…</p>
+                  ) : (
+                    <form onSubmit={(e) => void onSubmit(e)}>
+                      {LABELS.map((row) => (
+                        <div
+                          className="d-flex align-items-center justify-content-between border-bottom py-3"
+                          key={row.key}
+                        >
+                          <span>{row.label}</span>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={methods[row.key]}
+                              onChange={(e) =>
+                                setMethods({ ...methods, [row.key]: e.target.checked })
+                              }
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button type="submit" className="btn btn-primary mt-3" disabled={saving}>
+                        {saving ? "Saving…" : "Save Changes"}
+                      </button>
+                    </form>
+                  )}
                 </div>
-                {/* /Table List */}
               </div>
             </div>
           </div>
         </div>
-        {/* end card body */}
       </div>
-      {/* end card */}
     </div>
-    {/* End Content */}
-    {/* Footer Start */}
-    <div className="footer text-center bg-white p-2 border-top">
-      <p className="text-dark mb-0">
-        2025 ©
-        <Link to="#" className="link-primary">
-          Doctoury
-        </Link>
-        , All Rights Reserved
-      </p>
-    </div>
-    {/* Footer End */}
-  </div>
-  {/* ========================
-			End Page Content
-		========================= */}
-    <Modals/>
-</>
+  );
+};
 
-  )
-}
-
-export default PaymentMethodsSettings
+export default PaymentMethodsSettingsPage;

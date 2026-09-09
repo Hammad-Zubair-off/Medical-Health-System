@@ -1,5 +1,9 @@
 import { all_routes } from "../../../feature-module/routes/all_routes";
 
+/**
+ * Settings nav. Paid/provider stubs (Integrations, Email/SMS gateways, cron,
+ * backups, system update) are hidden — they require Blaze + third-party APIs.
+ */
 export const sidebarMenus = [
   {
     label: "Account Settings",
@@ -8,7 +12,7 @@ export const sidebarMenus = [
       { to: all_routes.profilesettings, label: "Profile" },
       { to: all_routes.securitysettings, label: "Security" },
       { to: all_routes.notificationssettings, label: "Notifications" },
-      { to: all_routes.integrationssettings, label: "Integrations" },
+      // Integrations — requires OAuth providers (hidden)
     ],
   },
   {
@@ -16,13 +20,10 @@ export const sidebarMenus = [
     icon: "ti ti-world-cog me-2",
     submenus: [
       { to: all_routes.organizationsettings, label: "Organization" },
-      { to: all_routes.localizationsettings, label: "Localization" },
       { to: all_routes.prefixessettings, label: "Prefixes" },
-      { to: all_routes.seosetupsettings, label: "SEO Setup" },
-      { to: all_routes.languagesettings, label: "Language" },
       { to: all_routes.maintenancemodesettings, label: "Maintenance Mode" },
-      { to: all_routes.loginandregistersettings, label: "Login & Register" },
       { to: all_routes.preferencessettings, label: "Preferences" },
+      // Localization / SEO / Language / Login&Register — still template UI
     ],
   },
   {
@@ -39,19 +40,14 @@ export const sidebarMenus = [
     icon: "ti ti-device-mobile-cog me-2",
     submenus: [
       { to: all_routes.invoicesettings, label: "Invoice Settings" },
-      { to: all_routes.invoicetemplatessettings, label: "Invoice Templates" },
-      { to: all_routes.signaturessettings, label: "Signatures" },
-      { to: all_routes.customfieldssettings, label: "Custom Fields" },
+      // Invoice Templates / Signatures / Custom Fields — not wired
     ],
   },
   {
     label: "System Settings",
     icon: "ti ti-device-desktop-cog me-2",
     submenus: [
-      { to: all_routes.emailsettings, label: "Email Settings" },
-      { to: all_routes.emailtemplatessettings, label: "Email Templates" },
-      { to: all_routes.smsgatewayssettings, label: "SMS Gateways" },
-      { to: all_routes.smstemplatessettings, label: "SMS Templates" },
+      // Email/SMS settings require Blaze + provider (hidden)
       { to: all_routes.gdprcookiessettings, label: "GDPR Cookies" },
     ],
   },
@@ -65,18 +61,5 @@ export const sidebarMenus = [
       { to: all_routes.currenciessettings, label: "Currencies" },
     ],
   },
-  {
-    label: "Other Settings",
-    icon: "ti ti-settings-2 me-2",
-    submenus: [
-      { to: all_routes.sitemapsettings, label: "Sitemap" },
-      { to: all_routes.clearcachesettings, label: "Clear Cache" },
-      { to: all_routes.storagesettings, label: "Storage" },
-      { to: all_routes.cronjobsettings, label: "Cronjob" },
-      { to: all_routes.banipaddresssettings, label: "Ban IP Address" },
-      { to: all_routes.systembackupsettings, label: "System Backup" },
-      { to: all_routes.databasebackupsettings, label: "Database Backup" },
-      { to: all_routes.systemupdate, label: "System Update" },
-    ],
-  },
+  // Other Settings (cron/backup/system update) — hidden; not applicable or needs infra
 ];

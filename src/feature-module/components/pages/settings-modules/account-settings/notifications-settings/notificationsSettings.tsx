@@ -1,344 +1,117 @@
-import { Link } from "react-router"
-import SettingsSidebar from "../../../../../../core/common/settings-sidebar/settingsSidebar"
+import { type FormEvent, useEffect, useState } from "react";
+import SettingsSidebar from "../../../../../../core/common/settings-sidebar/settingsSidebar";
+import { useAuth } from "../../../../../../core/context/AuthContext";
+import {
+  getUserNotificationPrefs,
+  updateUserProfile,
+} from "../../../../../../core/services/firestore/users.service";
 
+const PREF_KEYS: { key: string; label: string }[] = [
+  { key: "emailAppointments", label: "Email me about appointments" },
+  { key: "emailInvoices", label: "Email me about invoices & payments" },
+  { key: "emailLeaves", label: "Email me about leave requests" },
+  { key: "inAppGeneral", label: "In-app general notifications" },
+];
 
 const NotificationsSettings = () => {
+  const { user } = useAuth();
+  const [prefs, setPrefs] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    void (async () => {
+      setLoading(true);
+      try {
+        const loaded = await getUserNotificationPrefs(user.uid);
+        const next: Record<string, boolean> = {};
+        for (const row of PREF_KEYS) {
+          next[row.key] = loaded[row.key] ?? true;
+        }
+        setPrefs(next);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user?.uid]);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user?.uid) return;
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await updateUserProfile(user.uid, { notificationPrefs: prefs });
+      setSuccess("Notification preferences saved (delivery not configured).");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <>
-  {/* ========================
-			Start Page Content
-		========================= */}
-  <div className="page-wrapper">
-    {/* Start Content */}
-    <div className="content" id="profilePage">
-      {/* Page Header */}
-      <div className="mb-3 border-bottom pb-3">
-        <h4 className="fw-bold mb-0">Settings</h4>
-      </div>
-      {/* End Page Header */}
-      <div className="card">
-        <div className="card-body p-0">
-          <div className="settings-wrapper d-flex">
-            {/* Start Settings Sidebar */}
-            <SettingsSidebar/>
-            {/* End Settings Sidebar */}
-            <div className="card flex-fill mb-0 border-0 bg-light-500 shadow-none">
-              <div className="card-header border-bottom px-0 mx-3">
-                <h5 className="fw-bold">Notifications</h5>
-              </div>
-              {/* end card header */}
-              <div className="card-body px-0 mx-3">
-                {/* Items */}
-                <div className="d-flex align-items-center justify-content-between flex-wrap row-gap-3 border mb-3 p-3 rounded">
-                  <div className="d-flex align-items-center">
-                    <span className="avatar avatar-lg border bg-light me-2">
-                      <i className="ti ti-calendar-time text-dark fs-16" />
-                    </span>
-                    <div>
-                      <h5 className="fs-14 fw-semibold mb-1">
-                        New Appointment Booking
-                      </h5>
-                      <p className="fs-13">
-                        Alert when an appointment is booked
-                      </p>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-4">
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> Email </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> SMS </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> In App </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                  </div>
+    <div className="page-wrapper">
+      <div className="content">
+        <div className="mb-3 border-bottom pb-3">
+          <h4 className="fw-bold mb-0">Settings</h4>
+        </div>
+        <div className="card">
+          <div className="card-body p-0">
+            <div className="settings-wrapper d-flex">
+              <SettingsSidebar />
+              <div className="card flex-fill mb-0 border-0 bg-light-500 shadow-none">
+                <div className="card-header border-bottom px-0 mx-3">
+                  <h5 className="fw-bold">Notifications</h5>
                 </div>
-                {/* Items */}
-                <div className="d-flex align-items-center justify-content-between flex-wrap row-gap-3 border mb-3 p-3 rounded">
-                  <div className="d-flex align-items-center">
-                    <span className="avatar avatar-lg border bg-light me-2">
-                      <i className="ti ti-calendar-x text-dark fs-16" />
-                    </span>
-                    <div>
-                      <h5 className="fs-14 fw-semibold mb-1">
-                        Appointment Cancellation
-                      </h5>
-                      <p className="fs-13">Alert if a appointment is cancel</p>
-                    </div>
+                <div className="card-body px-0 mx-3">
+                  {error && <div className="alert alert-danger">{error}</div>}
+                  {success && <div className="alert alert-success">{success}</div>}
+                  <div className="alert alert-info">
+                    Preferences are stored on your user profile. Outbound email/SMS
+                    delivery is not enabled in this deployment.
                   </div>
-                  <div className="d-flex align-items-center gap-4">
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> Email </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> SMS </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> In App </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                {/* Items */}
-                <div className="d-flex align-items-center justify-content-between flex-wrap row-gap-3 border mb-3 p-3">
-                  <div className="d-flex align-items-center">
-                    <span className="avatar avatar-lg border bg-light me-2">
-                      <i className="ti ti-calendar-time text-dark fs-16" />
-                    </span>
-                    <div>
-                      <h5 className="fs-14 fw-semibold mb-1">
-                        Lab Report Ready
-                      </h5>
-                      <p className="fs-13">
-                        Notify when test reports are available
-                      </p>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-4">
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> Email </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> SMS </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> In App </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                {/* Items */}
-                <div className="d-flex align-items-center justify-content-between flex-wrap row-gap-3 border mb-3 p-3">
-                  <div className="d-flex align-items-center">
-                    <span className="avatar avatar-lg border bg-light me-2">
-                      <i className="ti ti-activity-heartbeat text-dark fs-16" />
-                    </span>
-                    <div>
-                      <h5 className="fs-14 fw-semibold mb-1">
-                        Follow-up Reminders
-                      </h5>
-                      <p className="fs-13">Scheduled follow-ups from doctors</p>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-4">
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> Email </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> SMS </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> In App </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                {/* Items */}
-                <div className="d-flex align-items-center justify-content-between flex-wrap row-gap-3 border mb-3 p-3">
-                  <div className="d-flex align-items-center">
-                    <span className="avatar avatar-lg border bg-light me-2">
-                      <i className="ti ti-file-dollar text-dark fs-16" />
-                    </span>
-                    <div>
-                      <h5 className="fs-14 fw-semibold mb-1">
-                        Billing/Invoice Notification
-                      </h5>
-                      <p className="fs-13">
-                        Notify when a new bill or invoice is generated
-                      </p>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-4">
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> Email </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> SMS </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> In App </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                {/* Items */}
-                <div className="d-flex align-items-center justify-content-between flex-wrap row-gap-3 border mb-0 p-3">
-                  <div className="d-flex align-items-center">
-                    <span className="avatar avatar-lg border bg-light me-2">
-                      <i className="ti ti-alert-octagon text-dark fs-16" />
-                    </span>
-                    <div>
-                      <h5 className="fs-14 fw-semibold mb-1">System Alerts</h5>
-                      <p className="fs-13">
-                        Login attempts, data changes, or system updates.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-4">
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> Email </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> SMS </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                    <div className="">
-                      <p className="fw-medium mb-1 text-dark"> In App </p>
-                      <label className="d-flex align-items-center form-switch ps-0">
-                        <input
-                          className="form-check-input m-0"
-                          type="checkbox"
-                          defaultChecked
-                        />
-                      </label>
-                    </div>
-                  </div>
+                  {loading ? (
+                    <p>Loading…</p>
+                  ) : (
+                    <form onSubmit={(e) => void onSubmit(e)}>
+                      {PREF_KEYS.map((row) => (
+                        <div
+                          className="d-flex align-items-center justify-content-between border-bottom py-3"
+                          key={row.key}
+                        >
+                          <span>{row.label}</span>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={Boolean(prefs[row.key])}
+                              onChange={(e) =>
+                                setPrefs({ ...prefs, [row.key]: e.target.checked })
+                              }
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button type="submit" className="btn btn-primary mt-3" disabled={saving}>
+                        {saving ? "Saving…" : "Save Changes"}
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
-              {/* end card body */}
             </div>
-            {/* end card */}
           </div>
         </div>
-        {/* end card body */}
       </div>
-      {/* end card */}
     </div>
-    {/* End Content */}
-    {/* Footer Start */}
-    <div className="footer text-center bg-white p-2 border-top">
-      <p className="text-dark mb-0">
-        2025 ©
-        <Link to="#" className="link-primary">
-          Doctoury
-        </Link>
-        , All Rights Reserved
-      </p>
-    </div>
-    {/* Footer End */}
-  </div>
-  {/* ========================
-			End Page Content
-		========================= */}
-</>
+  );
+};
 
-  )
-}
-
-export default NotificationsSettings
+export default NotificationsSettings;
