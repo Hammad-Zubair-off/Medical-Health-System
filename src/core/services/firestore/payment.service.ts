@@ -140,9 +140,23 @@ export async function createPayment(
     )
   );
 
-  const payments = await getPaymentsByInvoice(values.invoiceId);
-  const amountPaid = sumCompletedPayments(payments);
-  await recordPaymentSideEffects(values.invoiceId, amountPaid, actorUid);
+  // Immediate invoice update from known totals (do not depend solely on re-query).
+  const provisionalPaid = (invoice.amountPaid ?? 0) + amount;
+  await recordPaymentSideEffects(values.invoiceId, provisionalPaid, actorUid);
+
+  // Best-effort consistency pass from all completed payments.
+  try {
+    const payments = await getPaymentsByInvoice(values.invoiceId);
+    const amountPaid = sumCompletedPayments(payments);
+    if (amountPaid !== provisionalPaid) {
+      await recordPaymentSideEffects(values.invoiceId, amountPaid, actorUid);
+    }
+  } catch (err) {
+    console.warn(
+      "Payment created; invoice updated provisionally but re-sum failed:",
+      err
+    );
+  }
 
   return docRef.id;
 }

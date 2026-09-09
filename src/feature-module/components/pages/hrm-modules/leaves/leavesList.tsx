@@ -62,6 +62,11 @@ const LeavesList = () => {
       })),
     [leaves]
   );
+
+  const pendingCount = useMemo(
+    () => leaves.filter((l) => l.status === "pending").length,
+    [leaves]
+  );
   const columns = [
     {
       title: "ID",
@@ -389,7 +394,7 @@ const LeavesList = () => {
               </div>
             </div>
           </div>
-          <div className="table-responsive">
+          <div className="table-responsive" data-testid="leaves-table">
             {error ? <div className="alert alert-danger">{error}</div> : null}
             {actionError ? (
               <div className="alert alert-danger" data-testid="leave-action-error">
@@ -398,6 +403,11 @@ const LeavesList = () => {
             ) : null}
             {loading && data.length === 0 ? (
               <p className="text-muted">Loading leaves…</p>
+            ) : null}
+            {!loading && pendingCount === 0 ? (
+              <p className="text-muted mb-2" data-testid="leaves-no-pending">
+                No pending leave requests. Create one with New Leave to approve.
+              </p>
             ) : null}
             <Datatable
               columns={columns}
@@ -423,7 +433,7 @@ const LeavesList = () => {
       {/* ========================
 			End Page Content
 		========================= */}
-      <LeavesModal />
+      <LeavesModal onCreated={() => void refresh()} />
     </>
   );
 };

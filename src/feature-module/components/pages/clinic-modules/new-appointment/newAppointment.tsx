@@ -185,7 +185,18 @@ const NewAppointment = () => {
                 </h6>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)}>
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                onKeyDown={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (
+                    e.key === "Enter" &&
+                    target.closest(".ant-picker, .ant-picker-input")
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+              >
                 {submitError && (
                   <div className="alert alert-danger" role="alert">
                     {submitError}
@@ -348,6 +359,12 @@ const NewAppointment = () => {
                                         d ? d.format("YYYY-MM-DD") : ""
                                       )
                                     }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                      }
+                                    }}
                                   />
                                 )}
                               />
@@ -385,6 +402,12 @@ const NewAppointment = () => {
                                         t ? t.format("HH:mm") : ""
                                       )
                                     }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                      }
+                                    }}
                                   />
                                 )}
                               />
@@ -433,6 +456,7 @@ const NewAppointment = () => {
                     type="submit"
                     className="btn btn-primary"
                     disabled={saving}
+                    data-testid="create-appointment-submit"
                   >
                     {saving && (
                       <span

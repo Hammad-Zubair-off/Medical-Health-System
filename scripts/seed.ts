@@ -1333,6 +1333,15 @@ async function main() {
       daysAgo: 1,
       days: 1,
     },
+    // Always-pending leave for admin approve QA (reset to pending on every seed)
+    {
+      seedKey: "SEED-LV-QA-ALWAYS-PENDING",
+      staffIndex: 1,
+      type: "Sick Leave",
+      status: "pending" as const,
+      daysAgo: 0,
+      days: 1,
+    },
   ];
   for (const lv of leaveSeeds) {
     const st = staffDocIds[lv.staffIndex] ?? staffDocIds[0];

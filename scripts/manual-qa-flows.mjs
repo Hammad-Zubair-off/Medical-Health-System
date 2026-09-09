@@ -102,6 +102,29 @@ async function pickReactSelect(page, index, optionText) {
   return false;
 }
 
+/** Set Ant Date/Time picker without Enter (Enter can native-submit the form). */
+async function setAntPicker(page, nth, value) {
+  const input = page.locator(".ant-picker input").nth(nth);
+  await input.waitFor({ state: "visible", timeout: 15000 });
+  await input.click({ clickCount: 3 });
+  await input.fill(value);
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(400);
+}
+
+async function clickCreateAppointment(page) {
+  const btn = page.locator(
+    '[data-testid="create-appointment-submit"], button[type="submit"]:has-text("Create Appointment")'
+  );
+  await btn.waitFor({ state: "visible", timeout: 15000 });
+  // Wait until not stuck in saving from a prior accidental submit
+  for (let i = 0; i < 40; i++) {
+    if (!(await btn.isDisabled())) break;
+    await page.waitForTimeout(500);
+  }
+  await btn.click({ timeout: 30000 });
+}
+
 function holidayDatePlus2() {
   const d = new Date();
   d.setDate(d.getDate() + 2);
@@ -195,7 +218,6 @@ async function main() {
     await page.waitForSelector("#add_new_payment.show, #add_new_payment.modal", { timeout: 10000 });
     await page.waitForTimeout(1000);
 
-    // Bootstrap modal may need forced show
     await page.evaluate(() => {
       const el = document.getElementById("add_new_payment");
       if (el && !el.classList.contains("show")) {
@@ -206,21 +228,25 @@ async function main() {
     });
     await page.waitForSelector('[data-testid="payment-invoice"]', { timeout: 15000 });
 
+    // Wait until the invoice we created is listed (not just the select shell)
     const invSelect = page.locator('[data-testid="payment-invoice"]');
-    const optionCount = await invSelect.locator("option").count();
-    if (optionCount > 1) {
-      // Prefer the invoice we just created if listed
+    let selected = false;
+    for (let i = 0; i < 30; i++) {
       const labels = await invSelect.locator("option").allTextContents();
       const matchIdx = labels.findIndex(
-        (l) =>
-          (createdInvoiceNumber && l.includes(createdInvoiceNumber)) ||
-          /Demo Patient/i.test(l)
+        (l) => createdInvoiceNumber && l.includes(createdInvoiceNumber)
       );
       if (matchIdx > 0) {
         await invSelect.selectOption({ index: matchIdx });
-      } else {
-        await invSelect.selectOption({ index: 1 });
+        selected = true;
+        break;
       }
+      await page.waitForTimeout(500);
+    }
+    if (!selected) {
+      throw new Error(
+        `Invoice ${createdInvoiceNumber || "?"} not in payment select options`
+      );
     }
 
     await page.fill('[data-testid="payment-amount"]', "50");
@@ -230,40 +256,43 @@ async function main() {
     await page.click('[data-testid="payment-submit"]');
     await page.waitForTimeout(5000);
 
-    await page.goto(BASE + "/payments", { waitUntil: "domcontentloaded" });
-    const payText = await waitContent(
+    const successAlert = page.locator(".alert-success, .alert-danger");
+    const alertText = (await successAlert.first().innerText().catch(() => "")) || "";
+    if (/Failed|error|Select an invoice/i.test(alertText)) {
+      throw new Error(`Payment submit failed: ${alertText}`);
+    }
+
+    if (!createdInvoiceId) throw new Error("no invoice id from F1");
+    await page.goto(BASE + `/invoices-details/${createdInvoiceId}`, {
+      waitUntil: "domcontentloaded",
+    });
+    const invText = await waitContent(
       page,
       (t) =>
-        (t.includes(paymentMarker) || /\$50\.00|50\.00/.test(t)) &&
-        !/Loading payments/i.test(t),
+        /Amount Paid|Balance/i.test(t) &&
+        !/Loading/i.test(t) &&
+        (/\$50\.00|50\.00/.test(t) || /\$100\.00|100\.00/.test(t)),
       30
     );
-    const payOk =
-      !/Missing or insufficient|Failed to/i.test(payText) &&
-      (/Paid|Payment|\$50|50\.00/i.test(payText) || payText.includes(paymentMarker));
-    record("F2 record-payment", payOk, payText.slice(0, 140));
+    const balanceOk =
+      /Amount Paid\s*:\s*\$?50\.00/i.test(invText) ||
+      /Balance\s*:\s*\$?100\.00/i.test(invText) ||
+      /Partially Paid|partially-paid/i.test(invText);
+    record(
+      "F2 record-payment",
+      balanceOk,
+      invText.slice(0, 180)
+    );
+    record(
+      "F2 invoice-side-effects",
+      balanceOk && !/Amount Paid\s*:\s*\$?0\.00/i.test(invText),
+      invText.slice(0, 180)
+    );
+    await shot(page, "F2-invoice-after-pay");
     await shot(page, "F2-payments");
-
-    if (createdInvoiceId) {
-      await page.goto(BASE + `/invoices-details/${createdInvoiceId}`, {
-        waitUntil: "domcontentloaded",
-      });
-      const invText = await waitContent(
-        page,
-        (t) => /Balance|Paid|Amount/i.test(t) && !/Loading/i.test(t),
-        25
-      );
-      record(
-        "F2 invoice-side-effects",
-        /\$50|50\.00|Partially|Paid|Balance/i.test(invText),
-        invText.slice(0, 140)
-      );
-      await shot(page, "F2-invoice-after-pay");
-    } else {
-      record("F2 invoice-side-effects", null, "no invoice id from F1");
-    }
   } catch (err) {
     record("F2 record-payment", false, String(err).slice(0, 180));
+    record("F2 invoice-side-effects", false, String(err).slice(0, 120));
     await shot(page, "F2-fail");
   }
 
@@ -300,22 +329,51 @@ async function main() {
     record("F3 income-transactions", false, String(err).slice(0, 180));
   }
 
-  // ---- F4 Approve pending leave ----
+  // ---- F4 Create pending leave then approve ----
   try {
     await page.goto(BASE + "/leaves", { waitUntil: "domcontentloaded" });
     await waitContent(
       page,
-      (t) => /Leave|Pending|Approved/i.test(t) && !/Loading leaves/i.test(t),
-      30
+      (t) => /Admin Leaves/i.test(t) && !/Loading leaves/i.test(t),
+      35
     );
-    const approveBtn = page.locator('[data-testid^="leave-approve-"]').first();
+    await page.waitForSelector('[data-testid="leaves-table"]', { timeout: 20000 });
+
+    let approveBtn = page.locator('[data-testid^="leave-approve-"]').first();
+    if ((await approveBtn.count()) === 0) {
+      await page.locator('a[data-bs-target="#add_leave"]').click();
+      await page.waitForSelector('[data-testid="add-leave-form"]', { timeout: 10000 });
+      await page.waitForFunction(() => {
+        const sel = document.querySelector('[data-testid="leave-staff"]');
+        return sel && sel.options && sel.options.length > 1;
+      }, null, { timeout: 20000 });
+
+      const staffSelect = page.locator('[data-testid="leave-staff"]');
+      const typeSelect = page.locator('[data-testid="leave-type"]');
+      const staffValue = await staffSelect.locator("option").nth(1).getAttribute("value");
+      const typeValue = await typeSelect.locator("option").nth(1).getAttribute("value");
+      await staffSelect.selectOption(staffValue);
+      await typeSelect.selectOption(typeValue);
+
+      const reason = `QA-LEAVE-${Date.now()}`;
+      await page.fill('[data-testid="leave-reason"]', reason);
+
+      await page.click('[data-testid="leave-create-submit"]');
+      await page.waitForTimeout(3000);
+      await page.waitForSelector('[data-testid^="leave-approve-"]', {
+        state: "visible",
+        timeout: 25000,
+      });
+      approveBtn = page.locator('[data-testid^="leave-approve-"]').first();
+    }
+
     await approveBtn.waitFor({ state: "visible", timeout: 15000 });
     await approveBtn.click();
     await page.waitForTimeout(4000);
     const after = await content(page);
     record(
       "F4 approve-leave",
-      !/leave-action-error|Failed to/i.test(after),
+      !/leave-action-error|leave-create-error|Failed to/i.test(after),
       after.slice(0, 140)
     );
     await shot(page, "F4-leaves");
@@ -333,37 +391,25 @@ async function main() {
       35
     );
 
-    // Patient select (first)
     await page.locator(".react-select__control").nth(0).click();
     await page.waitForTimeout(500);
     await page.locator(".react-select__option", { hasText: /^Demo Patient$/ }).first().click();
     await page.waitForTimeout(400);
-    // Doctor select (second)
     await page.locator(".react-select__control").nth(1).click();
     await page.waitForTimeout(500);
     await page.locator(".react-select__option", { hasText: /Demo Doctor$/ }).first().click();
     await page.waitForTimeout(400);
 
-    const dateInput = page.locator(".ant-picker input").first();
-    await dateInput.click({ clickCount: 3 });
-    await dateInput.fill(hol.display);
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(1000);
-
-    // TimePicker (antd) — second .ant-picker is often time
-    const timeInput = page.locator(".ant-picker input").nth(1);
-    if (await timeInput.count()) {
-      await timeInput.click();
-      await timeInput.fill("10:00");
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(400);
+    await setAntPicker(page, 0, hol.display);
+    if (await page.locator(".ant-picker input").nth(1).count()) {
+      await setAntPicker(page, 1, "10:00");
     }
 
-    await page.click('button[type="submit"]:has-text("Create Appointment")');
+    await clickCreateAppointment(page);
     const errText = await waitContent(
       page,
       (t) => /holiday|Cannot create appointment/i.test(t),
-      20
+      25
     );
     const blocked = /holiday|Cannot create appointment/i.test(errText);
     record("F5 holiday-blocks-booking", blocked, errText.slice(0, 160));
@@ -379,26 +425,19 @@ async function main() {
     await waitContent(page, (t) => /Create Appointment|Patient/i.test(t), 25);
     await pickReactSelect(page, 0, "Demo Patient");
     await pickReactSelect(page, 1, "Demo Doctor");
-    const dateInput = page.locator(".ant-picker input").first();
-    await dateInput.click();
-    await dateInput.fill(open.display);
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(800);
-    const timeInput = page.locator(".ant-picker input").nth(1);
-    if (await timeInput.count()) {
-      await timeInput.click();
-      await timeInput.fill("11:00");
-      await page.keyboard.press("Enter");
+    await setAntPicker(page, 0, open.display);
+    if (await page.locator(".ant-picker input").nth(1).count()) {
+      await setAntPicker(page, 1, "11:00");
     }
 
-    await page.click('button[type="submit"]:has-text("Create Appointment")');
+    await clickCreateAppointment(page);
     await page.waitForTimeout(5000);
     const url = page.url();
     const text = await content(page);
     const created =
-      /appointments|consultation|success|Demo Patient/i.test(url + " " + text) &&
+      (/appointment-consultations|consultation/i.test(url) ||
+        /Demo Patient/i.test(text)) &&
       !/Cannot create appointment on a holiday/i.test(text);
-    // Navigate to list to confirm
     await page.goto(BASE + "/appointments", { waitUntil: "domcontentloaded" });
     const list = await waitContent(
       page,

@@ -13,6 +13,7 @@ import { db } from "../../../firebase";
 import type { FirestoreAppointment } from "./appointments.service";
 import type { DoctorData } from "./doctor.service";
 import { percentageChange } from "../../utils/report.utils";
+import { getDocsByIds } from "./_helpers";
 
 /** Count docs with `created` in [from, to) — limited so dashboards never scan unbounded. */
 async function countCreatedInRange(
@@ -124,42 +125,12 @@ export const getAllDoctorsCount = async (): Promise<number> => {
 };
 
 /**
- * Get all patients count (users with role 'patient' or all users if role doesn't exist)
+ * Count patients from the `Patient` collection (source of truth for clinic patients).
  */
 export const getAllPatientsCount = async (): Promise<number> => {
   try {
-    const usersRef = collection(db, "Users");
-    
-    // Try to query by role first
-    try {
-      const q = query(usersRef, where("role", "==", "patient"));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.size > 0) {
-        return querySnapshot.size;
-      }
-    } catch (roleError) {
-      console.log("Role field query failed, trying alternative approach");
-    }
-    
-    // If role query fails or returns 0, try to get all users and filter
-    // Or count all users who are not doctors
-    const allUsersSnapshot = await getDocs(usersRef);
-    let patientCount = 0;
-    
-    allUsersSnapshot.forEach((doc) => {
-      const userData = doc.data();
-      // If role exists and is 'patient', count it
-      // If role doesn't exist, check if user is not a doctor
-      const role = userData.role || userData.Role || "";
-      const isDoctor = userData.isDoctor || userData.is_doctor || role === "doctor" || role === "Doctor";
-      
-      if (role === "patient" || role === "Patient" || (!isDoctor && role !== "doctor" && role !== "Doctor" && role !== "admin" && role !== "Admin")) {
-        patientCount++;
-      }
-    });
-    
-    console.log("👥 [Admin Service] Patients count:", patientCount);
-    return patientCount;
+    const snap = await getDocs(collection(db, "Patient"));
+    return snap.size;
   } catch (error) {
     console.error("Error fetching patients count:", error);
     return 0;
@@ -488,58 +459,68 @@ export const getTopDepartments = async (limit: number = 3): Promise<TopDepartmen
 };
 
 /**
- * Get top patients (by total paid)
+ * Get top patients (by total paid) — rank in memory, then batch-fetch only top N.
  */
-export const getTopPatients = async (limit: number = 5): Promise<TopPatient[]> => {
+export const getTopPatients = async (limitCount: number = 5): Promise<TopPatient[]> => {
   try {
     const appointments = await getAllAppointments();
-    const usersRef = collection(db, "Users");
-    
-    // Group appointments by patient
-    const patientStats = new Map<string, { totalPaid: number; appointmentsCount: number }>();
-    
+
+    const patientStats = new Map<
+      string,
+      { totalPaid: number; appointmentsCount: number; nameHint: string }
+    >();
+
     appointments.forEach((apt) => {
-      const patientId = typeof apt.UserPatientID === "string" 
-        ? apt.UserPatientID 
-        : apt.UserPatientID?.id || "";
-      
-      if (patientId) {
-        const stats = patientStats.get(patientId) || { totalPaid: 0, appointmentsCount: 0 };
-        stats.appointmentsCount++;
-        if (apt.payment_status === "paid" || apt.status === "completed") {
-          stats.totalPaid += apt.price || 0;
-        }
-        patientStats.set(patientId, stats);
+      const patientId =
+        (typeof apt.patientId === "string" && apt.patientId) ||
+        (typeof apt.UserPatientID === "string"
+          ? apt.UserPatientID
+          : apt.UserPatientID?.id) ||
+        "";
+
+      if (!patientId) return;
+      const stats = patientStats.get(patientId) || {
+        totalPaid: 0,
+        appointmentsCount: 0,
+        nameHint: apt.patientsName || "",
+      };
+      stats.appointmentsCount++;
+      if (apt.payment_status === "paid" || apt.status === "completed") {
+        stats.totalPaid += apt.price || 0;
       }
+      if (!stats.nameHint && apt.patientsName) stats.nameHint = apt.patientsName;
+      patientStats.set(patientId, stats);
     });
-    
-    // Fetch patient details
-    const topPatients: TopPatient[] = [];
-    
-    for (const [patientId, stats] of Array.from(patientStats.entries())) {
-      try {
-        const userQuery = query(usersRef, where("uid", "==", patientId));
-        const userSnapshot = await getDocs(userQuery);
-        
-        if (!userSnapshot.empty) {
-          const userData = userSnapshot.docs[0].data();
-          topPatients.push({
-            patientId,
-            name: userData.display_name || "Unknown Patient",
-            photoUrl: userData.photo_url,
-            totalPaid: stats.totalPaid,
-            appointmentsCount: stats.appointmentsCount,
-          });
-        }
-      } catch (error) {
-        console.error(`Error fetching patient ${patientId}:`, error);
-      }
-    }
-    
-    // Sort by total paid (descending) and limit
-    return topPatients
-      .sort((a, b) => b.totalPaid - a.totalPaid)
-      .slice(0, limit);
+
+    const ranked = Array.from(patientStats.entries())
+      .sort((a, b) => b[1].totalPaid - a[1].totalPaid)
+      .slice(0, limitCount);
+
+    if (ranked.length === 0) return [];
+
+    const patientSnaps = await getDocsByIds(
+      db,
+      "Patient",
+      ranked.map(([id]) => id)
+    );
+    const byId = new Map(patientSnaps.map((d) => [d.id, d.data()]));
+
+    return ranked.map(([patientId, stats]) => {
+      const data = byId.get(patientId) as
+        | { displayName?: string; name?: string; photoUrl?: string; photo_url?: string }
+        | undefined;
+      return {
+        patientId,
+        name:
+          data?.displayName ||
+          data?.name ||
+          stats.nameHint ||
+          "Unknown Patient",
+        photoUrl: data?.photoUrl || data?.photo_url,
+        totalPaid: stats.totalPaid,
+        appointmentsCount: stats.appointmentsCount,
+      };
+    });
   } catch (error) {
     console.error("Error fetching top patients:", error);
     return [];

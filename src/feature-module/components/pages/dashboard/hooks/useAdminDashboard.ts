@@ -20,6 +20,32 @@ import type { FirestoreAppointment } from "../../../../../core/services/firestor
 import { listLeaves } from "../../../../../core/services/firestore/leave.service";
 import type { Leave } from "../../../../../core/types/leave.types";
 
+const DASHBOARD_TIMEOUT_MS = 22000;
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  fallback: T,
+  label: string
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => {
+          console.warn(`[AdminDashboard] ${label} timed out after ${DASHBOARD_TIMEOUT_MS}ms`);
+          resolve(fallback);
+        }, DASHBOARD_TIMEOUT_MS);
+      }),
+    ]);
+  } catch (err) {
+    console.error(`[AdminDashboard] ${label} failed:`, err);
+    return fallback;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export interface AdminDashboardData {
   loading: boolean;
   error: string | null;
@@ -56,26 +82,30 @@ export interface AdminDashboardData {
   availableDoctors: AvailableDoctor[];
   pendingLeaves: Leave[];
   appointments: FirestoreAppointment[];
-  appointmentsWithDetails: Array<FirestoreAppointment & {
-    doctor?: { name: string; photoUrl?: string; specialization?: string };
-    patient?: { name: string; photoUrl?: string; phone?: string };
-  }>;
+  appointmentsWithDetails: Array<
+    FirestoreAppointment & {
+      doctor?: { name: string; photoUrl?: string; specialization?: string };
+      patient?: { name: string; photoUrl?: string; phone?: string };
+    }
+  >;
   refreshLeaves: () => Promise<void>;
 }
+
+const emptyStats = {
+  totalDoctors: 0,
+  totalPatients: 0,
+  totalAppointments: 0,
+  totalRevenue: 0,
+  doctorsTrend: 0,
+  patientsTrend: 0,
+  appointmentsTrend: 0,
+  revenueTrend: 0,
+};
 
 export const useAdminDashboard = (): AdminDashboardData => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statistics, setStatistics] = useState({
-    totalDoctors: 0,
-    totalPatients: 0,
-    totalAppointments: 0,
-    totalRevenue: 0,
-    doctorsTrend: 0,
-    patientsTrend: 0,
-    appointmentsTrend: 0,
-    revenueTrend: 0,
-  });
+  const [statistics, setStatistics] = useState(emptyStats);
   const [appointmentStats, setAppointmentStats] = useState({
     all: 0,
     cancelled: 0,
@@ -85,18 +115,20 @@ export const useAdminDashboard = (): AdminDashboardData => {
   const [popularDoctors, setPopularDoctors] = useState<PopularDoctor[]>([]);
   const [topDepartments, setTopDepartments] = useState<TopDepartment[]>([]);
   const [topPatients, setTopPatients] = useState<TopPatient[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<
+    RecentTransaction[]
+  >([]);
   const [scheduleStats, setScheduleStats] = useState({
     available: 0,
     unavailable: 0,
     leave: 0,
   });
-  const [incomeByTreatment, setIncomeByTreatment] = useState<Array<{
-    name: string;
-    appointments: number;
-    revenue: number;
-  }>>([]);
-  const [availableDoctors, setAvailableDoctors] = useState<AvailableDoctor[]>([]);
+  const [incomeByTreatment, setIncomeByTreatment] = useState<
+    Array<{ name: string; appointments: number; revenue: number }>
+  >([]);
+  const [availableDoctors, setAvailableDoctors] = useState<AvailableDoctor[]>(
+    []
+  );
   const [pendingLeaves, setPendingLeaves] = useState<Leave[]>([]);
   const [appointments, setAppointments] = useState<FirestoreAppointment[]>([]);
 
@@ -110,12 +142,21 @@ export const useAdminDashboard = (): AdminDashboardData => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch all data in parallel
+        const emptyAptStats = {
+          all: 0,
+          cancelled: 0,
+          rescheduled: 0,
+          completed: 0,
+        };
+        const emptySchedule = { available: 0, unavailable: 0, leave: 0 };
+
         const [
           stats,
           aptStats,
@@ -129,21 +170,31 @@ export const useAdminDashboard = (): AdminDashboardData => {
           allAppointments,
           leaveResult,
         ] = await Promise.all([
-          getAdminStatistics(),
-          getAppointmentStatistics(),
-          getPopularDoctors(3),
-          getTopDepartments(3),
-          getTopPatients(5),
-          getRecentTransactions(5),
-          getDoctorsScheduleStats(),
-          getIncomeByTreatment(),
-          getAvailableDoctors(4),
-          getAllAppointments(),
-          listLeaves({ status: "pending", pageSize: 5 }).catch((err) => {
-            console.error("Error fetching pending leaves:", err);
-            return { leaves: [] as Leave[], nextCursor: null };
-          }),
+          withTimeout(getAdminStatistics(), emptyStats, "statistics"),
+          withTimeout(
+            getAppointmentStatistics(),
+            emptyAptStats,
+            "appointmentStats"
+          ),
+          withTimeout(getPopularDoctors(3), [], "popularDoctors"),
+          withTimeout(getTopDepartments(3), [], "topDepartments"),
+          withTimeout(getTopPatients(5), [], "topPatients"),
+          withTimeout(getRecentTransactions(5), [], "transactions"),
+          withTimeout(getDoctorsScheduleStats(), emptySchedule, "schedule"),
+          withTimeout(getIncomeByTreatment(), [], "income"),
+          withTimeout(getAvailableDoctors(4), [], "availableDoctors"),
+          withTimeout(getAllAppointments(), [], "appointments"),
+          withTimeout(
+            listLeaves({ status: "pending", pageSize: 5 }).catch(() => ({
+              leaves: [] as Leave[],
+              nextCursor: null,
+            })),
+            { leaves: [] as Leave[], nextCursor: null },
+            "leaves"
+          ),
         ]);
+
+        if (cancelled) return;
 
         setStatistics(stats);
         setAppointmentStats(aptStats);
@@ -157,18 +208,23 @@ export const useAdminDashboard = (): AdminDashboardData => {
         setAppointments(allAppointments);
         setPendingLeaves(leaveResult.leaves);
       } catch (err) {
-        console.error("Error fetching admin dashboard data:", err);
-        setError(err instanceof Error ? err.message : "Failed to load dashboard data");
+        if (!cancelled) {
+          console.error("Error fetching admin dashboard data:", err);
+          setError(
+            err instanceof Error ? err.message : "Failed to load dashboard data"
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchDashboardData();
+    void fetchDashboardData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Appointments with details will be populated as needed in the component
-  // For now, we'll return the appointments as-is and let the component handle details
   const appointmentsWithDetails = useMemo(() => {
     return appointments.map((apt) => ({
       ...apt,
@@ -203,4 +259,3 @@ export const useAdminDashboard = (): AdminDashboardData => {
     refreshLeaves,
   };
 };
-

@@ -290,7 +290,7 @@ async function main() {
   );
 
   // Misc
-  await smokePage(page, "C.5 assets", "/assets", /Asset|Purchase|Cost|Location|Status/i, {
+  await smokePage(page, "C.5 assets", "/clinic-assets", /Asset|Purchase|Cost|Location|Status/i, {
     shotName: "21-assets",
   });
   await smokePage(page, "C.5 locations", "/locations", /Location|Address|Clinic|Room|Floor/i, {

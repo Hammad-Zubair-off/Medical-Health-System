@@ -101,7 +101,7 @@ export const all_routes = {
   locations: "/locations",
   services: "/services",
   specializations: "/specializations",
-  assets: "/assets",
+  assets: "/clinic-assets",
   activities: "/activities",
   messages: "/messages",
   appointmentconsultations: "/appointment-consultations/:id",
