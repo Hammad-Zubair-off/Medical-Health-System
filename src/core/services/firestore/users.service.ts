@@ -6,9 +6,11 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
 } from "firebase/firestore";
-import { db } from "../../../firebase";
+import { updateProfile } from "firebase/auth";
+import { auth, db } from "../../../firebase";
 import type { AppUser, UserRole } from "../../types/auth.types";
 
 export interface CreateUserProfileData {
@@ -17,6 +19,12 @@ export interface CreateUserProfileData {
   email: string | null;
   phoneNumber: string | null;
   photoURL?: string | null;
+}
+
+export interface UpdateUserProfileData {
+  displayName?: string | null;
+  phoneNumber?: string | null;
+  notificationPrefs?: Record<string, boolean>;
 }
 
 /**
@@ -55,7 +63,7 @@ export async function getUserProfile(uid: string): Promise<AppUser | null> {
   return {
     uid,
     email: (data.email as string | null | undefined) ?? null,
-    emailVerified: false, // filled from Auth user in AuthContext
+    emailVerified: false,
     displayName:
       (data.display_name as string | null | undefined) ??
       (data.displayName as string | null | undefined) ??
@@ -65,7 +73,7 @@ export async function getUserProfile(uid: string): Promise<AppUser | null> {
       (data.photoURL as string | null | undefined) ??
       null,
     role,
-    doctorId: null, // resolved separately for doctors
+    doctorId: null,
     phoneNumber:
       (data.phone_number as string | null | undefined) ??
       (data.phoneNumber as string | null | undefined) ??
@@ -73,10 +81,19 @@ export async function getUserProfile(uid: string): Promise<AppUser | null> {
   };
 }
 
-/**
- * Create Users/{uid}. Always keys by Auth uid as document ID,
- * and also stores a `uid` field for backward-compatible where queries.
- */
+export async function getUserNotificationPrefs(
+  uid: string
+): Promise<Record<string, boolean>> {
+  if (!uid) return {};
+  const snap = await getDoc(doc(db, "Users", uid));
+  if (!snap.exists()) return {};
+  const prefs = snap.data().notificationPrefs;
+  if (prefs && typeof prefs === "object") {
+    return prefs as Record<string, boolean>;
+  }
+  return {};
+}
+
 export async function createUserProfile(
   uid: string,
   data: CreateUserProfileData
@@ -92,10 +109,33 @@ export async function createUserProfile(
   });
 }
 
-/**
- * Resolve Doctor/{id} where userid == Users/{uid} reference.
- * Matches getDoctorDataByUserId query shape.
- */
+/** Update display name / phone / notification prefs. Does not change role or email. */
+export async function updateUserProfile(
+  uid: string,
+  data: UpdateUserProfileData
+): Promise<void> {
+  const payload: Record<string, unknown> = {
+    updated: serverTimestamp(),
+    updatedBy: uid,
+  };
+  if (data.displayName !== undefined) {
+    payload.display_name = data.displayName;
+  }
+  if (data.phoneNumber !== undefined) {
+    payload.phone_number = data.phoneNumber;
+  }
+  if (data.notificationPrefs !== undefined) {
+    payload.notificationPrefs = data.notificationPrefs;
+  }
+  await updateDoc(doc(db, "Users", uid), payload);
+
+  if (data.displayName !== undefined && auth.currentUser?.uid === uid) {
+    await updateProfile(auth.currentUser, {
+      displayName: data.displayName ?? undefined,
+    });
+  }
+}
+
 export async function resolveDoctorId(uid: string): Promise<string | null> {
   if (!uid) return null;
 

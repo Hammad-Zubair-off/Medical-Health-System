@@ -1,25 +1,60 @@
-import  { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import FilterIndex from "../../../../core/common/filter/filterIndex";
 import SearchInput from "../../../../core/common/dataTable/dataTableSearch";
-import { TransactionsListData } from "../../../../core/json/transactionsListData";
 import Datatable from "../../../../core/common/dataTable";
 import ImageWithBasePath from "../../../../core/imageWithBasePath";
+import { useTransactions } from "./hooks/useTransactions";
+import { formatDate } from "../../../../core/utils/display.utils";
+import { formatMoney } from "../../../../core/utils/money.utils";
+
+const methodLabel = (method: string | null) => {
+  switch (method) {
+    case "bank-transfer":
+      return "Bank Transfer";
+    case "card":
+      return "Card";
+    case "cash":
+      return "Cash";
+    case "insurance":
+      return "Insurance";
+    default:
+      return method || "Other";
+  }
+};
 
 const TransactionsList = () => {
-  const data = TransactionsListData;
+  const { transactions, loading, error } = useTransactions();
+  const [searchText, setSearchText] = useState<string>("");
+
+  const data = useMemo(
+    () =>
+      transactions.map((t) => ({
+        key: t.id,
+        TransactionID: t.id.slice(0, 8).toUpperCase(),
+        Patient: t.kind === "income" ? t.title.replace(/^Payment — /, "") : "—",
+        Image: "user-01.jpg",
+        Description: t.title,
+        PaidDate: formatDate(t.date),
+        PaymentMethod: methodLabel(t.method),
+        Amount: formatMoney(t.amount),
+        Status: t.kind === "income" ? "Completed" : "Expense",
+      })),
+    [transactions]
+  );
+
   const columns = [
     {
       title: "Transaction ID",
       dataIndex: "TransactionID",
-      render: (text: any) => <Link to="#">{text}</Link>,
-      sorter: (a: any, b: any) =>
-        a.TransactionID.length - b.TransactionID.length,
+      render: (text: string) => <Link to="#">{text}</Link>,
+      sorter: (a: { TransactionID: string }, b: { TransactionID: string }) =>
+        a.TransactionID.localeCompare(b.TransactionID),
     },
     {
       title: "Patient",
       dataIndex: "Patient",
-      render: (text: any, record: any) => (
+      render: (text: string, record: { Image: string }) => (
         <div className="d-flex align-items-center">
           <Link to="#" className="avatar avatar-md me-2">
             <ImageWithBasePath
@@ -33,38 +68,41 @@ const TransactionsList = () => {
           </Link>
         </div>
       ),
-      sorter: (a: any, b: any) => a.Patient.length - b.Patient.length,
+      sorter: (a: { Patient: string }, b: { Patient: string }) =>
+        a.Patient.localeCompare(b.Patient),
     },
     {
       title: "Description",
       dataIndex: "Description",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) => a.Description.length - b.Description.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { Description: string }, b: { Description: string }) =>
+        a.Description.localeCompare(b.Description),
     },
     {
       title: "Paid Date",
       dataIndex: "PaidDate",
-      render: (text: any) => <div className="text-dark">{text}</div>,
-      sorter: (a: any, b: any) => a.PaidDate.length - b.PaidDate.length,
+      render: (text: string) => <div className="text-dark">{text}</div>,
+      sorter: (a: { PaidDate: string }, b: { PaidDate: string }) =>
+        a.PaidDate.localeCompare(b.PaidDate),
     },
     {
       title: "Payment Method",
       dataIndex: "PaymentMethod",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) =>
-        a.PaymentMethod.length - b.PaymentMethod.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { PaymentMethod: string }, b: { PaymentMethod: string }) =>
+        a.PaymentMethod.localeCompare(b.PaymentMethod),
     },
     {
       title: "Amount",
       dataIndex: "Amount",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) =>
-        a.PaymentMAmountethod.length - b.PaymentMethod.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { Amount: string }, b: { Amount: string }) =>
+        a.Amount.localeCompare(b.Amount),
     },
     {
       title: "Status",
       dataIndex: "Status",
-      render: (text: any) => (
+      render: (text: string) => (
         <span
           className={`badge border ${
             text === "Completed"
@@ -72,39 +110,33 @@ const TransactionsList = () => {
               : "badge-soft-info border-info text-info"
           } rounded fw-medium`}
         >
-          Completed
+          {text}
         </span>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
+      sorter: (a: { Status: string }, b: { Status: string }) =>
+        a.Status.localeCompare(b.Status),
     },
   ];
-
-  const [searchText, setSearchText] = useState<string>("");
 
   const handleSearch = (value: string) => {
     setSearchText(value);
   };
+
   return (
     <>
-      {/* ========================
-			Start Page Content
-		========================= */}
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content">
-          {/* Start Page Header */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-2 pb-3 mb-3 border-1 border-bottom">
             <div className="flex-grow-1">
               <h4 className="fw-bold mb-0">
                 {" "}
                 Transactions{" "}
                 <span className="badge badge-soft-primary fw-medium border py-1 px-2 border-primary fs-13 ms-1">
-                  Total Transactions : 565
+                  Total Transactions : {loading ? "…" : data.length}
                 </span>{" "}
               </h4>
             </div>
             <div className="text-end d-flex">
-              {/* dropdown*/}
               <div className="dropdown me-1">
                 <Link
                   to="#"
@@ -129,8 +161,11 @@ const TransactionsList = () => {
               </div>
             </div>
           </div>
-          {/* End Page Header */}
-          {/*  Start Filter */}
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
           <div className=" d-flex align-items-center justify-content-between flex-wrap row-gap-3">
             <div className="d-flex align-items-center gap-2">
               <div className="search-set mb-3">
@@ -195,20 +230,19 @@ const TransactionsList = () => {
               </div>
             </div>
           </div>
-          {/*  End Filter */}
-          {/*  Start Table */}
           <div className="table-responsive">
-            <Datatable
-              columns={columns}
-              dataSource={data}
-              Selection={false}
-              searchText={searchText}
-            />
+            {loading && data.length === 0 ? (
+              <p className="text-muted">Loading transactions…</p>
+            ) : (
+              <Datatable
+                columns={columns}
+                dataSource={data}
+                Selection={false}
+                searchText={searchText}
+              />
+            )}
           </div>
-          {/*  End Table */}
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
         <div className="footer text-center bg-white p-2 border-top">
           <p className="text-dark mb-0">
             2025 ©{" "}
@@ -218,11 +252,7 @@ const TransactionsList = () => {
             , All Rights Reserved
           </p>
         </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
     </>
   );
 };

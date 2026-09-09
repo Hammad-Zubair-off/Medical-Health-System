@@ -7,7 +7,8 @@ import { useEffect, useMemo, useState } from "react";
 import CommonSelect from "../../../../../core/common/common-select/commonSelect";
 import { all_routes } from "../../../../routes/all_routes";
 import {
-  doctorFormSchema,
+  doctorCreateFormSchema,
+  doctorEditFormSchema,
   type DoctorFormSchema,
 } from "../../../../../core/schemas/doctor.schema";
 import { listSpecializations } from "../../../../../core/services/firestore/specialization.service";
@@ -34,16 +35,24 @@ const EMPTY_VALUES: DoctorFormSchema = {
   bio: "",
   status: "active",
   uid: "",
+  password: "",
+  confirmPassword: "",
 };
+
+export interface DoctorFormSubmitValues extends DoctorProfileFormValues {
+  uid: string;
+  password: string;
+  confirmPassword: string;
+}
 
 export interface DoctorFormProps {
   defaultValues?: Partial<DoctorFormSchema>;
   submitting: boolean;
   error: string | null;
   submitLabel: string;
-  /** When true, require the Console-created Auth UID (provisioning option c). */
-  requireUid?: boolean;
-  onSubmit: (values: DoctorProfileFormValues & { uid: string }) => Promise<void>;
+  /** When true, show password fields to create a login account. */
+  createLogin?: boolean;
+  onSubmit: (values: DoctorFormSubmitValues) => Promise<void>;
 }
 
 const DoctorForm = ({
@@ -51,10 +60,11 @@ const DoctorForm = ({
   submitting,
   error,
   submitLabel,
-  requireUid = false,
+  createLogin = false,
   onSubmit,
 }: DoctorFormProps) => {
   const [specOptions, setSpecOptions] = useState<{ value: string; label: string }[]>([]);
+  const [showAdvancedUid, setShowAdvancedUid] = useState(false);
 
   useEffect(() => {
     void listSpecializations(true)
@@ -75,7 +85,7 @@ const DoctorForm = ({
     control,
     formState: { errors },
   } = useForm<DoctorFormSchema>({
-    resolver: zodResolver(doctorFormSchema),
+    resolver: zodResolver(createLogin ? doctorCreateFormSchema : doctorEditFormSchema),
     defaultValues: mergedDefaults,
     values: mergedDefaults,
   });
@@ -83,9 +93,6 @@ const DoctorForm = ({
   return (
     <form
       onSubmit={handleSubmit(async (values) => {
-        if (requireUid && !values.uid?.trim()) {
-          return;
-        }
         await onSubmit({
           displayName: values.displayName,
           email: values.email,
@@ -97,6 +104,8 @@ const DoctorForm = ({
           bio: values.bio ?? "",
           status: values.status,
           uid: values.uid ?? "",
+          password: values.password ?? "",
+          confirmPassword: values.confirmPassword ?? "",
         });
       })}
     >
@@ -108,24 +117,7 @@ const DoctorForm = ({
       <div className="card">
         <div className="card-body">
           <h6 className="fw-bold mb-3">Doctor Information</h6>
-          {requireUid && (
-            <div className="alert alert-info fs-13">
-              Create the Auth user in Firebase Console first, then paste the UID below.
-              This app cannot create another person&apos;s login from the browser.
-            </div>
-          )}
           <div className="row">
-            {requireUid && (
-              <div className="col-md-12">
-                <div className="mb-3">
-                  <label className="form-label mb-1 fw-medium">
-                    Firebase Auth UID<span className="text-danger ms-1">*</span>
-                  </label>
-                  <input type="text" className="form-control" {...register("uid")} />
-                  <FieldError message={errors.uid?.message} />
-                </div>
-              </div>
-            )}
             <div className="col-md-6">
               <div className="mb-3">
                 <label className="form-label mb-1 fw-medium">
@@ -232,6 +224,79 @@ const DoctorForm = ({
               </div>
             </div>
           </div>
+
+          {createLogin && (
+            <>
+              <h6 className="fw-bold mb-1 border-top pt-3">Login access</h6>
+              <p className="text-muted fs-13 mb-3">
+                Set a password so this doctor can sign in with the email above.
+                Share the email and password securely after creating the account.
+              </p>
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label className="form-label mb-1 fw-medium">
+                      Password<span className="text-danger ms-1">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      className="form-control"
+                      autoComplete="new-password"
+                      data-testid="doctor-password"
+                      {...register("password")}
+                    />
+                    <FieldError message={errors.password?.message} />
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label className="form-label mb-1 fw-medium">
+                      Confirm password<span className="text-danger ms-1">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      className="form-control"
+                      autoComplete="new-password"
+                      data-testid="doctor-confirm-password"
+                      {...register("confirmPassword")}
+                    />
+                    <FieldError message={errors.confirmPassword?.message} />
+                  </div>
+                </div>
+                <div className="col-12">
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm px-0 mb-2"
+                    onClick={() => setShowAdvancedUid((v) => !v)}
+                  >
+                    {showAdvancedUid
+                      ? "Hide advanced UID option"
+                      : "Already have an Auth UID? Link instead"}
+                  </button>
+                </div>
+                {showAdvancedUid && (
+                  <div className="col-md-12">
+                    <div className="mb-3">
+                      <label className="form-label mb-1 fw-medium">
+                        Existing Firebase Auth UID
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Paste UID if the login already exists"
+                        {...register("uid")}
+                      />
+                      <p className="text-muted fs-13 mb-0 mt-1">
+                        If set, password fields are ignored and this existing
+                        account is linked instead.
+                      </p>
+                      <FieldError message={errors.uid?.message} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div className="d-flex align-items-center justify-content-end">

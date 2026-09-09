@@ -77,6 +77,10 @@ export const sharedRoutes: RouteObject[] = [
     element: <FileManager />,
   },
   {
+    path: routes.fileManagerFolder,
+    element: <FileManager />,
+  },
+  {
     path: routes.kanbanView,
     element: <KanbanView />,
   },

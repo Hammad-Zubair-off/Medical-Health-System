@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny — Firebase Storage is unused.
+    // Clinic files are stored in Cloudinary (see docs/FILE_MANAGER.md).
+    // Do not treat this deny as an oversight; uploads go to Cloudinary via
+    // an unsigned preset, with metadata in Firestore FileObject.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

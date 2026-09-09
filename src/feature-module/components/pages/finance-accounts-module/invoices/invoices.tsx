@@ -1,27 +1,53 @@
-import  { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
 import FilterIndex from "../../../../../core/common/filter/filterIndex";
 import SearchInput from "../../../../../core/common/dataTable/dataTableSearch";
-import { all_routes } from "../../../../routes/all_routes";
-import { InvoicesData } from "../../../../../core/json/invoicesData";
+import {
+  all_routes,
+  editInvoicesPath,
+  invoicesDetailsPath,
+} from "../../../../routes/all_routes";
 import Datatable from "../../../../../core/common/dataTable";
+import { useInvoices } from "../hooks/useInvoices";
+import { formatDate } from "../../../../../core/utils/display.utils";
+import { formatMoney } from "../../../../../core/utils/money.utils";
+import { invoiceStatusLabel } from "../../../../../core/utils/invoice.utils";
 
 const InvoicesList = () => {
-  const data = InvoicesData;
+  const { invoices, loading, error, search, setSearch } = useInvoices();
+  const [searchText, setSearchText] = useState<string>("");
+
+  const data = useMemo(
+    () =>
+      invoices.map((inv) => ({
+        key: inv._id,
+        InvoiceID: inv.invoiceNumber || inv._id,
+        Patient: inv.patientName || "—",
+        Image: "user-01.jpg",
+        CreatedDate: formatDate(inv.issuedOn),
+        DueDate: formatDate(inv.dueDate),
+        Amount: formatMoney(inv.total),
+        Status: invoiceStatusLabel(inv.status),
+        _id: inv._id,
+      })),
+    [invoices]
+  );
+
   const columns = [
     {
       title: "Invoice ID",
       dataIndex: "InvoiceID",
-      render: (text: any) => (
-        <Link to={all_routes.invoicesDetails}>{text}</Link>
+      render: (text: string, record: { _id: string }) => (
+        <Link to={invoicesDetailsPath(record._id)}>{text}</Link>
       ),
-      sorter: (a: any, b: any) => a.InvoiceID.length - b.InvoiceID.length,
+      sorter: (a: { InvoiceID: string }, b: { InvoiceID: string }) =>
+        a.InvoiceID.localeCompare(b.InvoiceID),
     },
     {
       title: "Patient",
       dataIndex: "Patient",
-      render: (text: any, record: any) => (
+      render: (text: string, record: { Image: string }) => (
         <div className="d-flex align-items-center">
           <Link to="#" className="avatar avatar-md me-2">
             <ImageWithBasePath
@@ -35,32 +61,36 @@ const InvoicesList = () => {
           </Link>
         </div>
       ),
-      sorter: (a: any, b: any) => a.Patient.length - b.Patient.length,
+      sorter: (a: { Patient: string }, b: { Patient: string }) =>
+        a.Patient.localeCompare(b.Patient),
     },
     {
       title: "Created Date",
       dataIndex: "CreatedDate",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) => a.CreatedDate.length - b.CreatedDate.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { CreatedDate: string }, b: { CreatedDate: string }) =>
+        a.CreatedDate.localeCompare(b.CreatedDate),
     },
     {
       title: "Due Date",
       dataIndex: "DueDate",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) => a.DueDate.length - b.DueDate.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { DueDate: string }, b: { DueDate: string }) =>
+        a.DueDate.localeCompare(b.DueDate),
     },
     {
       title: "Amount",
       dataIndex: "Amount",
-      render: (text: any) => (
+      render: (text: string) => (
         <div className="fw-semibold text-dark"> {text} </div>
       ),
-      sorter: (a: any, b: any) => a.Amount.length - b.Amount.length,
+      sorter: (a: { Amount: string }, b: { Amount: string }) =>
+        a.Amount.localeCompare(b.Amount),
     },
     {
       title: "Status",
       dataIndex: "Status",
-      render: (text: any) => (
+      render: (text: string) => (
         <span
           className={`badge border ${
             text === "Paid"
@@ -73,11 +103,12 @@ const InvoicesList = () => {
           {text}
         </span>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
+      sorter: (a: { Status: string }, b: { Status: string }) =>
+        a.Status.localeCompare(b.Status),
     },
     {
       title: "",
-      render: () => (
+      render: (_: unknown, record: { _id: string }) => (
         <div className="action-item p-2">
           <Link to="#" data-bs-toggle="dropdown">
             <i className="ti ti-dots-vertical" />
@@ -85,7 +116,7 @@ const InvoicesList = () => {
           <ul className="dropdown-menu p-2">
             <li>
               <Link
-                to={all_routes.invoicesDetails}
+                to={invoicesDetailsPath(record._id)}
                 className="dropdown-item d-flex align-items-center"
               >
                 View details
@@ -93,7 +124,7 @@ const InvoicesList = () => {
             </li>
             <li>
               <Link
-                to={all_routes.editInvoices}
+                to={editInvoicesPath(record._id)}
                 className="dropdown-item d-flex align-items-center"
               >
                 Edit
@@ -124,32 +155,27 @@ const InvoicesList = () => {
       ),
     },
   ];
-  const [searchText, setSearchText] = useState<string>("");
 
   const handleSearch = (value: string) => {
     setSearchText(value);
+    setSearch(value);
   };
+
   return (
     <>
-      {/* ========================
-			Start Page Content
-		========================= */}
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content">
-          {/* Start Page Header */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-2 pb-3 mb-3 border-1 border-bottom">
             <div className="flex-grow-1">
               <h4 className="fw-bold mb-0">
                 {" "}
                 Invoices{" "}
                 <span className="badge badge-soft-primary fw-medium border py-1 px-2 border-primary fs-13 ms-1">
-                  Total Invoices : 565
+                  Total Invoices : {loading ? "…" : data.length}
                 </span>{" "}
               </h4>
             </div>
             <div className="text-end d-flex">
-              {/* dropdown*/}
               <div className="dropdown me-1">
                 <Link
                   to="#"
@@ -181,15 +207,21 @@ const InvoicesList = () => {
               </Link>
             </div>
           </div>
-          {/* End Page Header */}
-          {/*  Start Filter */}
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
           <div className=" d-flex align-items-center justify-content-between flex-wrap row-gap-3">
             <div className="d-flex align-items-center gap-2">
               <div className="search-set mb-3">
                 <div className="d-flex align-items-center flex-wrap gap-2">
                   <div className="table-search d-flex align-items-center mb-0">
                     <div className="search-input">
-                      <SearchInput value={searchText} onChange={handleSearch} />
+                      <SearchInput
+                        value={searchText || search}
+                        onChange={handleSearch}
+                      />
                     </div>
                   </div>
                 </div>
@@ -247,20 +279,19 @@ const InvoicesList = () => {
               </div>
             </div>
           </div>
-          {/*  End Filter */}
-          {/*  Start Table */}
           <div className="table-responsive">
-            <Datatable
-              columns={columns}
-              dataSource={data}
-              Selection={false}
-              searchText={searchText}
-            />
+            {loading && data.length === 0 ? (
+              <p className="text-muted">Loading invoices…</p>
+            ) : (
+              <Datatable
+                columns={columns}
+                dataSource={data}
+                Selection={false}
+                searchText={searchText}
+              />
+            )}
           </div>
-          {/*  End Table */}
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
         <div className="footer text-center bg-white p-2 border-top">
           <p className="text-dark mb-0">
             2025 ©{" "}
@@ -270,11 +301,7 @@ const InvoicesList = () => {
             , All Rights Reserved
           </p>
         </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
     </>
   );
 };

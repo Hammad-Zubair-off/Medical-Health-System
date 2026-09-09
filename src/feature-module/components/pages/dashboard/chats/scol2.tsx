@@ -1,8 +1,16 @@
-import { useState } from "react";
 import Chart from "react-apexcharts";
 
-const SCol2Chart = () => {
-  const [chartOptions] = useState<any>({
+type Props = {
+  data?: number[];
+  color?: string;
+};
+
+/** Tiny sparkline — pass live series; falls back to a flat line when empty. */
+const SCol2Chart = ({ data, color = "#F36C3D" }: Props) => {
+  const seriesData =
+    data && data.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
+
+  const chartOptions: Record<string, unknown> = {
     chart: {
       width: 100,
       height: 54,
@@ -13,7 +21,7 @@ const SCol2Chart = () => {
     stroke: {
       curve: "smooth",
       width: 1,
-      colors: ["#F36C3D"], // orange line
+      colors: [color],
     },
     fill: {
       type: "gradient",
@@ -23,50 +31,27 @@ const SCol2Chart = () => {
         opacityTo: 0,
         stops: [0, 90, 100],
         colorStops: [
-          {
-            offset: 0,
-            color: "#F36C3D",
-            opacity: 0.4,
-          },
-          {
-            offset: 100,
-            color: "#ffffff",
-            opacity: 0.8,
-          },
+          { offset: 0, color, opacity: 0.4 },
+          { offset: 100, color: "#ffffff", opacity: 0.8 },
         ],
       },
     },
-    dataLabels: {
-      enabled: false,
-    },
+    dataLabels: { enabled: false },
     xaxis: {
       labels: { show: false },
       axisTicks: { show: false },
       axisBorder: { show: false },
     },
-    yaxis: {
-      show: false,
-    },
-    grid: {
-      show: false,
-    },
-    tooltip: {
-      enabled: false,
-    },
-  });
-
-  const [series] = useState([
-    {
-      name: "Data",
-      data: [22, 35, 30, 40, 28, 45, 40],
-    },
-  ]);
+    yaxis: { show: false },
+    grid: { show: false },
+    tooltip: { enabled: false },
+  };
 
   return (
     <div id="s-col-2">
       <Chart
         options={chartOptions}
-        series={series}
+        series={[{ name: "Data", data: seriesData }]}
         type="area"
         width={100}
         height={54}

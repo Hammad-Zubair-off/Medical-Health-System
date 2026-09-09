@@ -5,6 +5,7 @@ export const Doctor = [
   { value: "Dr. David Lee", label: "Dr. David Lee" },
   { value: "Dr. Anna Kim", label: "Dr. Anna Kim" },
 ];
+export { City, Country, State } from "../constants/geo";
 export const Designation = [
   { value: "Cardiologist", label: "Cardiologist" },
   { value: "Orthopedic Surgeon", label: "Orthopedic Surgeon" },
@@ -87,27 +88,8 @@ export const Session = [
   { value: "Noon", label: "Noon" },
 ];
 export const Location = [{ value: "Select", label: "Select" }];
-export const Country = [
-  { value: "Select", label: "Select" },
-  { value: "USA", label: "USA" },
-  { value: "Canada", label: "Canada" },
-  { value: "UK", label: "UK" },
-  { value: "Germany", label: "Germany" },
-];
-export const State = [
-  { value: "Select", label: "Select" },
-  { value: "California", label: "California" },
-  { value: "Ontario", label: "Ontario" },
-  { value: "England", label: "England" },
-  { value: "Bavaria", label: "Bavaria" },
-];
-export const City = [
-  { value: "Select", label: "Select" },
-  { value: "Los Angeles", label: "Los Angeles" },
-  { value: "Toronto", label: "Toronto" },
-  { value: "London", label: "London" },
-  { value: "Munich", label: "Bavaria" },
-];
+// Country / State / City re-exported from ../constants/geo (see top of file)
+
 export const StatusActive = [
   { value: "Select", label: "Select" },
   { value: "Active", label: "Active" },

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../../../../../core/context/AuthContext";
+import { provisionLoginAccount } from "../../../../../../core/services/auth/auth.service";
 import {
   createPatient as createPatientService,
   getPatient,
@@ -61,6 +62,15 @@ export interface UsePatientFormReturn {
   updatePatient: (id: string, values: PatientFormValues) => Promise<void>;
 }
 
+function clinicalValues(values: PatientFormValues): PatientFormValues {
+  return {
+    ...values,
+    createLogin: false,
+    password: "",
+    confirmPassword: "",
+  };
+}
+
 /** Create/update actions for the patient form screens. */
 export function usePatientForm(): UsePatientFormReturn {
   const { user } = useAuth();
@@ -72,7 +82,21 @@ export function usePatientForm(): UsePatientFormReturn {
       setSubmitting(true);
       setError(null);
       try {
-        return await createPatientService(values, user?.uid);
+        let userId: string | null = null;
+        if (values.createLogin) {
+          userId = await provisionLoginAccount({
+            email: values.email,
+            password: values.password,
+            displayName: `${values.firstName.trim()} ${values.lastName.trim()}`.trim(),
+            phoneNumber: values.phoneNumber || null,
+            role: "patient",
+          });
+        }
+        return await createPatientService(
+          clinicalValues(values),
+          user?.uid,
+          userId
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to create patient");
         throw err;
@@ -88,7 +112,7 @@ export function usePatientForm(): UsePatientFormReturn {
       setSubmitting(true);
       setError(null);
       try {
-        await updatePatientService(id, values, user?.uid);
+        await updatePatientService(id, clinicalValues(values), user?.uid);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to update patient");
         throw err;

@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { StaffsListData } from "../../../../core/json/staffsListData";
 import ImageWithBasePath from "../../../../core/imageWithBasePath";
 import SearchInput from "../../../../core/common/dataTable/dataTableSearch";
 import Datatable from "../../../../core/common/dataTable";
@@ -8,9 +7,25 @@ import StaffsModal from "./modal/staffsModal";
 import { Designation, Staff, StaffsRole, Status } from "../../../../core/common/selectOption";
 import { DatePicker, Select } from "antd";
 import Slider from "rc-slider";
+import { useStaff } from "./hooks/useStaff";
 
 const StaffsList = () => {
-  const data = StaffsListData;
+  const { staff, loading, error, search: _search, setSearch } = useStaff();
+  const data = useMemo(
+    () =>
+      staff.map((s) => ({
+        key: s._id,
+        id: s._id,
+        Staff: s.displayName,
+        Image: "user-08.jpg",
+        Designation: s.designationName || "—",
+        Role: s.employmentType,
+        Phone: s.phoneNumber || "—",
+        Email: s.email || "—",
+        Status: s.status === "active" ? "Available" : "Unavailable",
+      })),
+    [staff]
+  );
   const columns = [
     {
       title: "Staff",
@@ -132,6 +147,7 @@ const StaffsList = () => {
 
   const handleSearch = (value: string) => {
     setSearchText(value);
+    setSearch(value);
   };
   const getModalContainer = () => {
     const modalElement = document.getElementById("modal-datepicker");
@@ -156,7 +172,7 @@ const StaffsList = () => {
               <h4 className="fw-bold mb-0">
                 Staff
                 <span className="badge badge-soft-primary border border-primary fs-13 fw-medium ms-2">
-                  Total Staffs : 565
+                  Total Staffs : {loading ? "…" : data.length}
                 </span>
               </h4>
             </div>
@@ -409,6 +425,9 @@ const StaffsList = () => {
             </div>
           </div>
           <div className="table-responsive">
+            {error ? (
+              <div className="alert alert-danger">{error}</div>
+            ) : null}
             <Datatable
               columns={columns}
               dataSource={data}

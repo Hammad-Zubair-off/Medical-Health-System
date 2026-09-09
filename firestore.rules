@@ -65,9 +65,14 @@ service cloud.firestore {
 
     match /Users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
-      allow create: if isSelf(uid)
-        && request.resource.data.role == "patient"
-        && request.resource.data.uid == request.auth.uid;
+      // Self-serve patient signup, or admin provisioning a patient/doctor login.
+      allow create: if isAdmin()
+        && request.resource.data.uid == uid
+        && (request.resource.data.role == "patient"
+            || request.resource.data.role == "doctor")
+        || (isSelf(uid)
+            && request.resource.data.role == "patient"
+            && request.resource.data.uid == request.auth.uid);
       allow update: if isAdmin()
         || (isSelf(uid) && request.resource.data.role == resource.data.role);
       allow delete: if isAdmin();
@@ -120,6 +125,178 @@ service cloud.firestore {
     match /Review/{id} {
       allow read: if isSignedIn();
       allow write: if isAdmin() || hasRole("doctor") || hasRole("patient");
+    }
+
+    match /Prescription/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.doctorUserId == request.auth.uid)
+        || (isSignedIn() && resource.data.patientUserId == request.auth.uid);
+      allow create: if isAdmin()
+        || (hasRole("doctor") && request.resource.data.doctorUserId == request.auth.uid);
+      allow update: if isAdmin()
+        || (hasRole("doctor") && resource.data.doctorUserId == request.auth.uid);
+      allow delete: if false;   // clinical record — cancel, never delete
+    }
+
+    // Finance — money fields are admin-written only. Patients may read their
+    // own invoices/payments; they must never write amountPaid/total/status.
+    match /Invoice/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.patientUserId == request.auth.uid)
+        || (isSignedIn() && resource.data.doctorUserId == request.auth.uid);
+      allow create, update: if isAdmin()
+        || (hasRole("doctor")
+            && request.resource.data.doctorUserId == request.auth.uid);
+      allow delete: if false;
+    }
+
+    match /Payment/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.patientUserId == request.auth.uid);
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /Expense/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /ExpenseCategory/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /Counter/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // Clinic misc — signed-in read, admin write
+    match /Asset/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /Location/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /Service/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // HRM — payroll is private (admin or own staffUserId). Leave create pins
+    // status == "pending" for self-requests; only admin may approve/reject.
+    function isStaffRole() {
+      return isAdmin() || hasRole("doctor");
+    }
+
+    match /Staff/{id} {
+      allow read: if isStaffRole();
+      allow write: if isAdmin();
+    }
+
+    match /Department/{id} {
+      allow read: if isStaffRole();
+      allow write: if isAdmin();
+    }
+
+    match /Designation/{id} {
+      allow read: if isStaffRole();
+      allow write: if isAdmin();
+    }
+
+    match /LeaveType/{id} {
+      allow read: if isStaffRole();
+      allow write: if isAdmin();
+    }
+
+    match /Holiday/{id} {
+      // Signed-in read so patient booking can enforce clinic-wide closures via isHoliday().
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /Attendance/{id} {
+      allow read: if isStaffRole();
+      allow write: if isAdmin();
+    }
+
+    match /Leave/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.staffUserId == request.auth.uid);
+      allow create: if isAdmin()
+        || (isSignedIn()
+            && request.resource.data.staffUserId == request.auth.uid
+            && request.resource.data.status == "pending");
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /Payroll/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.staffUserId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // Clinic configuration (settings UI). Lookups soft-delete only.
+    match /ClinicSettings/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    match /CancellationReason/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+    match /TaxRate/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+    match /Currency/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+    match /BankAccount/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // File Manager metadata (assets live in Cloudinary). Soft-delete only.
+    match /FileObject/{id} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.ownerUid == request.auth.uid)
+        || (isSignedIn() && request.auth.uid in resource.data.sharedWith);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == "active"
+        && request.resource.data.sizeBytes is number
+        && request.resource.data.sizeBytes == int(request.resource.data.sizeBytes)
+        && request.resource.data.sizeBytes > 0
+        && request.resource.data.sizeBytes <= 10485760
+        && request.resource.data.publicId is string
+        && request.resource.data.secureUrl is string;
+
+      allow update: if isAdmin()
+        || (isSignedIn()
+            && resource.data.ownerUid == request.auth.uid
+            && request.resource.data.ownerUid == resource.data.ownerUid
+            && request.resource.data.publicId == resource.data.publicId
+            && request.resource.data.secureUrl == resource.data.secureUrl);
+
+      allow delete: if false;
+    }
+
+    match /FileFolder/{id} {
+      allow read, update: if isAdmin()
+        || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if false;
     }
 
     match /{document=**} {

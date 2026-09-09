@@ -28,8 +28,8 @@ export const all_routes = {
   patientprofilesettings: "/patient/patient-profile-settings",
   patientpasswordsettings: "/patient/patient-password-settings",
   patientnotificationssettings: "/patient/patient-notifications-settings",
-  patientprescriptiondetails: "/patient/patient-prescription-details",
-  patientinvoicedetails: "/patient/patient-invoice-details",
+  patientprescriptiondetails: "/patient/patient-prescription-details/:id",
+  patientinvoicedetails: "/patient/patient-invoice-details/:id",
 
   //Doctor
   doctorschedule: "/doctor/doctor-schedule",
@@ -40,20 +40,13 @@ export const all_routes = {
   doctorspasswordsettings: "/doctor/doctors-password-settings",
   doctorsnotificationsettings: "/doctor/doctors-notification-settings",
   doctorsprescriptions: "/doctor/doctors-prescriptions",
+  addPrescription: "/doctor/add-prescription",
+  editPrescription: "/doctor/edit-prescription/:id",
   onlineconsultations: "/doctor/online-consultations",
   doctorsappointments: "/doctor/doctors-appointments",
   doctorspatientdetails: "/doctor/doctors-patient-details",
   doctorsappointmentdetails: "/doctor/doctors-appointment-details/:id",
-  doctorsprescriptiondetails: "/doctor/doctors-prescription-details",
-
-  //Super Admin routes
-  superAdminDashboard: "/super-admin/super-admin-dashboard",
-  companies: "/super-admin/companies",
-  subscriptions: "/super-admin/subscriptions",
-  packages: "/super-admin/packages",
-  packagesGrid: "/super-admin/packages-grid",
-  domain: "/super-admin/domain",
-  purchaseTransaction: "/super-admin/purchase-transaction",
+  doctorsprescriptiondetails: "/doctor/doctors-prescription-details/:id",
 
   //Application routes
   chat: "/application/chat",
@@ -70,13 +63,15 @@ export const all_routes = {
   EmailReply: "/application/email-reply",
   audioCall: "/application/audio-call",
   fileManager: "/application/file-manager",
+  fileManagerFolder: "/application/file-manager/folder/:folderId",
   socialFeed: "/application/social-feed",
   kanbanView: "/application/kanban-view",
   invoice: "/application/invoice",
   contacts: "/application/contacts",
   searchList: "/application/search-list",
-  invoiceDetails: "/application/invoice-details",
+  invoiceDetails: "/application/invoice-details/:id",
   addInvoice: "/add-invoice",
+  editInvoice: "/edit-invoice/:id",
   notifications: "/notifications",
 
   //Layout Routes
@@ -113,59 +108,36 @@ export const all_routes = {
 
   //HRM Pages
   staffs: "/staffs",
+  staffDetails: "/staff-details/:id",
+  editStaff: "/edit-staff/:id",
   hrmDepartments: "/hrm-departments",
   designation: "/designation",
   attendance: "/attendance",
   leaves: "/leaves",
+  leaveDetails: "/leave-details/:id",
   leaveType: "/leave-type",
   holidays: "/holidays",
   payroll: "/payroll",
   payroll2: "/payroll-2",
+  payrollDetails: "/payroll-details/:id",
 
   //Finance & Accounts
   expenses: "/expenses",
   expenseCategory: "/expense-category",
   income: "/income",
   invoices: "/invoices",
-  invoicesDetails: "/invoices-details",
+  invoicesDetails: "/invoices-details/:id",
   addInvoices: "/add-invoices",
-  editInvoices: "/edit-invoices",
+  editInvoices: "/edit-invoices/:id",
   payments: "/payments",
   transactions: "/transactions",
 
   //Administration
-  rolesPermissions: "/roles-and-permissions",
-  permissions: "/permissions",
-  deleteaccountrequest: "/delete-account-request",
   incomeReport: "/income-report",
   expenseReport: "/expense-report",
   profitloss: "/profit-and-loss",
   appointmentReport: "/appointment-report",
   patientReport: "/patient-report",
-
-  //Content Page routes
-  pages: "/pages",
-  addPage: "/add-page",
-  editPage: "/edit-page",
-  blogs: "/blogs",
-  addBlogs: "/add-blog",
-  editBlogs: "/edit-blog",
-  blogDetails: "/blog-details",
-  blogCategories: "/blog-categories",
-  blogTags: "/blog-tags",
-  blogComments: "/blog-comments",
-  countries: "/countries",
-  states: "/states",
-  cities: "/cities",
-  testimonials: "/testimonials",
-  faq: "/faq",
-
-  //Support
-  contactMessages: "/contact-messages",
-  tickets: "/tickets",
-  ticketDetails: "/ticket-details",
-  announcements: "/announcements",
-  newsletters: "/newsletters",
 
   //Pages routes
   profile: "/profile",
@@ -247,4 +219,56 @@ export function doctorsAppointmentDetailsPath(id: string): string {
 
 export function patientAppointmentDetailsPath(id: string): string {
   return `/patient/patient-appointment-details/${id}`;
+}
+
+export function doctorsPrescriptionDetailsPath(id: string): string {
+  return `/doctor/doctors-prescription-details/${id}`;
+}
+
+export function patientPrescriptionDetailsPath(id: string): string {
+  return `/patient/patient-prescription-details/${id}`;
+}
+
+export function editPrescriptionPath(id: string): string {
+  return `/doctor/edit-prescription/${id}`;
+}
+
+export function staffDetailsPath(id: string): string {
+  return `/staff-details/${id}`;
+}
+
+export function editStaffPath(id: string): string {
+  return `/edit-staff/${id}`;
+}
+
+export function payrollDetailsPath(id: string): string {
+  return `/payroll-details/${id}`;
+}
+
+export function leaveDetailsPath(id: string): string {
+  return `/leave-details/${id}`;
+}
+
+export function fileManagerFolderPath(id: string): string {
+  return `/application/file-manager/folder/${id}`;
+}
+
+export function invoiceDetailsPath(id: string): string {
+  return `/application/invoice-details/${id}`;
+}
+
+export function patientInvoiceDetailsPath(id: string): string {
+  return `/patient/patient-invoice-details/${id}`;
+}
+
+export function invoicesDetailsPath(id: string): string {
+  return `/invoices-details/${id}`;
+}
+
+export function editInvoicePath(id: string): string {
+  return `/edit-invoice/${id}`;
+}
+
+export function editInvoicesPath(id: string): string {
+  return `/edit-invoices/${id}`;
 }

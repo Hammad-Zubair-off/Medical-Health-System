@@ -1,7 +1,56 @@
-import { collection, getDocs, query, where, Timestamp, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  Timestamp,
+  doc,
+  getDoc,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import { db } from "../../../firebase";
 import type { FirestoreAppointment } from "./appointments.service";
 import type { DoctorData } from "./doctor.service";
+import { percentageChange } from "../../utils/report.utils";
+
+/** Count docs with `created` in [from, to) — limited so dashboards never scan unbounded. */
+async function countCreatedInRange(
+  collectionName: string,
+  from: Date,
+  to: Date,
+  max = 500
+): Promise<number> {
+  try {
+    const snap = await getDocs(
+      query(
+        collection(db, collectionName),
+        where("created", ">=", Timestamp.fromDate(from)),
+        where("created", "<", Timestamp.fromDate(to)),
+        orderBy("created", "desc"),
+        limit(max)
+      )
+    );
+    return snap.size;
+  } catch (error) {
+    console.error(`Error counting created ${collectionName}:`, error);
+    return 0;
+  }
+}
+
+async function computeCreatedTrend(
+  collectionName: string,
+  lastStart: Date,
+  prevStart: Date,
+  prevEnd: Date
+): Promise<number> {
+  const now = new Date();
+  const [last, prev] = await Promise.all([
+    countCreatedInRange(collectionName, lastStart, now),
+    countCreatedInRange(collectionName, prevStart, prevEnd),
+  ]);
+  return Math.round(percentageChange(last, prev));
+}
 
 export interface AdminStatistics {
   totalDoctors: number;
@@ -237,10 +286,11 @@ export const getAdminStatistics = async (): Promise<AdminStatistics> => {
       ? ((last7DaysAppointments.length - previous7DaysAppointments.length) / previous7DaysAppointments.length) * 100
       : last7DaysAppointments.length > 0 ? 100 : 0;
 
-    // For doctors and patients, we'll use a simple calculation
-    // In a real scenario, you'd track creation dates
-    const doctorsTrend = 95; // Placeholder - would need creation dates
-    const patientsTrend = 25; // Placeholder - would need creation dates
+    // Trends from audit `created` (last 7 days vs previous 7), capped queries
+    const [doctorsTrend, patientsTrend] = await Promise.all([
+      computeCreatedTrend("Doctor", last7DaysStart, previous7DaysStart, previous7DaysEnd),
+      computeCreatedTrend("Patient", last7DaysStart, previous7DaysStart, previous7DaysEnd),
+    ]);
 
     // Revenue trend
     const last7DaysRevenue = last7DaysAppointments

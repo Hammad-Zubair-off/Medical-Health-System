@@ -12,13 +12,22 @@ const DoctorsAppointmentDetails = lazyPage(() => import("../components/pages/doc
 const DoctorsNotificationSettings = lazyPage(() => import("../components/pages/doctor-modules/doctors-notification-settings/doctorsNotificationSettings"));
 const DoctorsPasswordSettings = lazyPage(() => import("../components/pages/doctor-modules/doctors-password-settings/doctorsPasswordSettings"));
 const DoctorsPrescriptionDetails = lazyPage(() => import("../components/pages/doctor-modules/doctors-prescription-details/doctorsPrescriptionDetails"));
+const DoctorsPrescriptions = lazyPage(() => import("../components/pages/doctor-modules/doctors-prescriptions/doctorsPrescriptions"));
+const AddPrescription = lazyPage(() => import("../components/pages/doctor-modules/add-prescription/addPrescription"));
+const EditPrescription = lazyPage(() => import("../components/pages/doctor-modules/edit-prescription/editPrescription"));
 const DoctorsProfileSettings = lazyPage(() => import("../components/pages/doctor-modules/doctors-profile-settings/doctorsProfileSettings"));
 const DoctorsReviews = lazyPage(() => import("../components/pages/doctor-modules/doctors-reviews/doctorsReviews"));
+const DoctorsLeaves = lazyPage(() => import("../components/pages/doctor-modules/doctors-leaves/doctorsLeaves"));
+const PatientDetails = lazyPage(() => import("../components/pages/clinic-modules/patient-details/patientDetails"));
 
 export const doctorRoutes: RouteObject[] = [
   {
     path: routes.doctordashboard,
     element: <DoctorDahboard />,
+  },
+  {
+    path: routes.patientDetails,
+    element: <PatientDetails />,
   },
   {
     path: routes.doctorsappointments,
@@ -38,7 +47,15 @@ export const doctorRoutes: RouteObject[] = [
   },
   {
     path: routes.doctorsprescriptions,
-    element: <ComingSoonShared title="Prescriptions" description="Prescriptions feature is currently under development and will be available soon." />,
+    element: <DoctorsPrescriptions />,
+  },
+  {
+    path: routes.addPrescription,
+    element: <AddPrescription />,
+  },
+  {
+    path: routes.editPrescription,
+    element: <EditPrescription />,
   },
   {
     path: routes.doctorsprescriptiondetails,
@@ -46,7 +63,7 @@ export const doctorRoutes: RouteObject[] = [
   },
   {
     path: routes.doctorleaves,
-    element: <ComingSoonShared title="Leave Management" description="Leave management feature is currently under development and will be available soon." />,
+    element: <DoctorsLeaves />,
   },
   {
     path: routes.doctorreviews,

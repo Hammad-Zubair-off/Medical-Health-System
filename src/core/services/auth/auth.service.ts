@@ -12,9 +12,10 @@ import {
   deleteUser,
   type User,
 } from "firebase/auth";
-import { auth } from "../../../firebase";
+import { auth, getSecondaryAuth } from "../../../firebase";
 import { createUserProfile } from "../firestore/users.service";
 import { createLinkedPatient } from "../firestore/patient.service";
+import type { UserRole } from "../../types/auth.types";
 import { mapAuthError } from "./auth-errors";
 
 function throwMapped(error: unknown): never {
@@ -68,6 +69,69 @@ export async function signUpPatient(
         await deleteUser(user);
       } catch (rollbackError) {
         console.error("Failed to roll back Auth user after profile write failure:", rollbackError);
+      }
+    }
+    throwMapped(error);
+  }
+}
+
+/**
+ * Admin provisions a login for a patient or doctor without signing the admin out.
+ * Uses a secondary Auth app for createUser, then writes Users/{uid} as the admin.
+ */
+export async function provisionLoginAccount(params: {
+  email: string;
+  password: string;
+  displayName: string;
+  phoneNumber: string | null;
+  role: Extract<UserRole, "patient" | "doctor">;
+}): Promise<string> {
+  if (!auth.currentUser) {
+    throw new Error("You must be signed in as an administrator.");
+  }
+
+  const secondaryAuth = getSecondaryAuth();
+  let created: User | null = null;
+
+  try {
+    const cred = await createUserWithEmailAndPassword(
+      secondaryAuth,
+      params.email.trim(),
+      params.password
+    );
+    created = cred.user;
+
+    if (params.displayName) {
+      await updateProfile(created, { displayName: params.displayName });
+    }
+
+    // Firestore writes use the primary (admin) session — not the secondary user.
+    await createUserProfile(created.uid, {
+      role: params.role,
+      displayName: params.displayName,
+      email: params.email.trim(),
+      phoneNumber: params.phoneNumber,
+      photoURL: null,
+    });
+
+    await signOut(secondaryAuth);
+    return created.uid;
+  } catch (error) {
+    if (created) {
+      try {
+        const toDelete = secondaryAuth.currentUser ?? created;
+        await deleteUser(toDelete);
+      } catch (rollbackError) {
+        console.error(
+          "Failed to roll back Auth user after provision failure:",
+          rollbackError
+        );
+      }
+    } else {
+      try {
+        await signOut(secondaryAuth);
+      } catch {
+        /* ignore */
       }
     }
     throwMapped(error);

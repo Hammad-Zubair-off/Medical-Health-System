@@ -1,38 +1,72 @@
 import { Link } from "react-router";
 import Datatable from "../../../../../core/common/dataTable";
-import { useState } from "react";
-import { PatientInvoiceData } from "../../../../../core/json/patientInvoiceData";
+import { useMemo, useState } from "react";
 import SearchInput from "../../../../../core/common/dataTable/dataTableSearch";
 import Modals from "./modals/modals";
-import { all_routes } from "../../../../routes/all_routes";
+import {
+  patientInvoiceDetailsPath,
+} from "../../../../routes/all_routes";
+import { useAuth } from "../../../../../core/context/AuthContext";
+import { useInvoices } from "../../finance-accounts-module/hooks/useInvoices";
+import { formatDate } from "../../../../../core/utils/display.utils";
+import { formatMoney } from "../../../../../core/utils/money.utils";
+import { invoiceStatusLabel } from "../../../../../core/utils/invoice.utils";
 
 const PatientInvoices = () => {
-  const data = PatientInvoiceData;
+  const { user } = useAuth();
+  const { invoices, loading, error } = useInvoices({
+    patientUserId: user?.uid,
+  });
+  const [searchText, setSearchText] = useState<string>("");
+
+  const data = useMemo(
+    () =>
+      invoices.map((inv) => ({
+        key: inv._id,
+        _id: inv._id,
+        Invoice_ID: inv.invoiceNumber || inv._id,
+        Description: inv.notes || inv.doctorName || "Invoice",
+        Created_Date: formatDate(inv.issuedOn),
+        Due_Date: formatDate(inv.dueDate),
+        Amount: formatMoney(inv.total),
+        Status: invoiceStatusLabel(inv.status),
+      })),
+    [invoices]
+  );
+
   const columns = [
     {
       title: "Invoice ID",
       dataIndex: "Invoice_ID",
-      sorter: (a: any, b: any) => a.Invoice_ID.length - b.Invoice_ID.length,
+      render: (text: string, record: { _id: string }) => (
+        <Link to={patientInvoiceDetailsPath(record._id)}>{text}</Link>
+      ),
+      sorter: (a: { Invoice_ID: string }, b: { Invoice_ID: string }) =>
+        a.Invoice_ID.localeCompare(b.Invoice_ID),
     },
     {
       title: "Description",
       dataIndex: "Description",
-      sorter: (a: any, b: any) => a.Description.length - b.Description.length,
+      sorter: (a: { Description: string }, b: { Description: string }) =>
+        a.Description.localeCompare(b.Description),
     },
     {
       title: "Created Date",
       dataIndex: "Created_Date",
-      sorter: (a: any, b: any) => a.Created_Date.length - b.Created_Date.length,
+      sorter: (a: { Created_Date: string }, b: { Created_Date: string }) =>
+        a.Created_Date.localeCompare(b.Created_Date),
     },
     {
       title: "Due Date",
       dataIndex: "Due_Date",
-      sorter: (a: any, b: any) => a.Due_Date.length - b.Due_Date.length,
+      sorter: (a: { Due_Date: string }, b: { Due_Date: string }) =>
+        a.Due_Date.localeCompare(b.Due_Date),
     },
     {
       title: "Amount",
       dataIndex: "Amount",
-      sorter: (a: any, b: any) => a.Amount.length - b.Amount.length,
+      sorter: (a: { Amount: string }, b: { Amount: string }) =>
+        a.Amount.localeCompare(b.Amount),
     },
     {
       title: "Status",
@@ -51,11 +85,12 @@ const PatientInvoices = () => {
           {text}
         </span>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
+      sorter: (a: { Status: string }, b: { Status: string }) =>
+        a.Status.localeCompare(b.Status),
     },
     {
       title: "",
-      render: () => (
+      render: (_: unknown, record: { _id: string }) => (
         <div className="action-item">
           <>
             <Link to="#" data-bs-toggle="dropdown">
@@ -64,7 +99,7 @@ const PatientInvoices = () => {
             <ul className="dropdown-menu p-2">
               <li>
                 <Link
-                  to={all_routes.patientinvoicedetails}
+                  to={patientInvoiceDetailsPath(record._id)}
                   className="dropdown-item d-flex align-items-center"
                 >
                   View
@@ -84,10 +119,8 @@ const PatientInvoices = () => {
           </>
         </div>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
     },
   ];
-  const [searchText, setSearchText] = useState<string>("");
 
   const handleSearch = (value: string) => {
     setSearchText(value);
@@ -95,25 +128,18 @@ const PatientInvoices = () => {
 
   return (
     <>
-      {/* ========================
-			Start Page Content
-		========================= */}
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content content-two">
-          {/* Start Page Header */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-2 pb-3 mb-3 border-1 border-bottom">
             <div className="flex-grow-1">
               <h4 className="fw-bold mb-0">
-                
                 Invoices
                 <span className="badge badge-soft-primary border pt-1 px-2 border-primary fw-medium ms-2 fw-medium fs-13">
-                  Total Invoices : 582
+                  Total Invoices : {loading ? "…" : data.length}
                 </span>
               </h4>
             </div>
             <div className="text-end d-flex">
-              {/* dropdown*/}
               <div className="dropdown me-1">
                 <Link
                   to="#"
@@ -138,7 +164,11 @@ const PatientInvoices = () => {
               </div>
             </div>
           </div>
-          {/* End Page Header */}
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
           <div className=" d-flex align-items-center justify-content-between flex-wrap row-gap-3">
             <div className="search-set mb-3">
               <div className="d-flex align-items-center flex-wrap gap-2">
@@ -173,28 +203,27 @@ const PatientInvoices = () => {
               </div>
             </div>
           </div>
-          {/* start row */}
           <div className="row">
             <div className="col-sm-12">
               <div>
                 <div className="card-body p-0">
                   <div className="table-responsive table-nowrap">
-                    <Datatable
-                      columns={columns}
-                      dataSource={data}
-                      Selection={false}
-                      searchText={searchText}
-                    />
+                    {loading && data.length === 0 ? (
+                      <p className="text-muted p-3">Loading invoices…</p>
+                    ) : (
+                      <Datatable
+                        columns={columns}
+                        dataSource={data}
+                        Selection={false}
+                        searchText={searchText}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-            {/* end col */}
           </div>
-          {/* end row */}
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
         <div className="footer text-center bg-white p-2 border-top">
           <p className="text-dark mb-0">
             2025 ©
@@ -204,11 +233,7 @@ const PatientInvoices = () => {
             , All Rights Reserved
           </p>
         </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
       <Modals />
     </>
   );

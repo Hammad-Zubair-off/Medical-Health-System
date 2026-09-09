@@ -245,14 +245,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-1454
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -263,7 +263,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Anthony Lewis</Link>
+                              <Link to={all_routes.invoice}>Anthony Lewis</Link>
                             </h6>
                             <span className="fs-12">anthony@example.com</span>
                           </div>
@@ -281,10 +281,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -305,14 +305,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-6571
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -323,7 +323,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>
+                              <Link to={all_routes.invoice}>
                                 Brian Villalobos
                               </Link>
                             </h6>
@@ -343,10 +343,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -367,14 +367,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-2245
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -385,7 +385,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Harvey Smith</Link>
+                              <Link to={all_routes.invoice}>Harvey Smith</Link>
                             </h6>
                             <span className="fs-12">harvey@example.com</span>
                           </div>
@@ -403,10 +403,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -427,14 +427,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-1456
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -445,7 +445,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Stephan Peralt</Link>
+                              <Link to={all_routes.invoice}>Stephan Peralt</Link>
                             </h6>
                             <span className="fs-12">peral@example.com</span>
                           </div>
@@ -463,10 +463,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -487,14 +487,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-0045
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -505,7 +505,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Doglas Martini</Link>
+                              <Link to={all_routes.invoice}>Doglas Martini</Link>
                             </h6>
                             <span className="fs-12">martniwr@example.com</span>
                           </div>
@@ -523,10 +523,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -547,14 +547,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-6244
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -565,7 +565,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Linda Ray</Link>
+                              <Link to={all_routes.invoice}>Linda Ray</Link>
                             </h6>
                             <span className="fs-12">ray456@example.com</span>
                           </div>
@@ -583,10 +583,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -607,14 +607,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-9565
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -625,7 +625,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Elliot Murray</Link>
+                              <Link to={all_routes.invoice}>Elliot Murray</Link>
                             </h6>
                             <span className="fs-12">murray@example.com</span>
                           </div>
@@ -643,10 +643,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -667,14 +667,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-6874
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -685,7 +685,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Rebecca Smtih</Link>
+                              <Link to={all_routes.invoice}>Rebecca Smtih</Link>
                             </h6>
                             <span className="fs-12">smtih@example.com</span>
                           </div>
@@ -703,10 +703,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -727,14 +727,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-1454
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -745,7 +745,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Anthony Lewis</Link>
+                              <Link to={all_routes.invoice}>Anthony Lewis</Link>
                             </h6>
                             <span className="fs-12">anthony@example.com</span>
                           </div>
@@ -763,10 +763,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -787,14 +787,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-6587
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -805,7 +805,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Connie Waters</Link>
+                              <Link to={all_routes.invoice}>Connie Waters</Link>
                             </h6>
                             <span className="fs-12">connie@example.com</span>
                           </div>
@@ -823,10 +823,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link
@@ -847,14 +847,14 @@ const Invoice = () => {
                         </div>
                       </td>
                       <td>
-                        <Link to={all_routes.invoiceDetails} className="tb-data">
+                        <Link to={all_routes.invoice} className="tb-data">
                           INV-5879
                         </Link>
                       </td>
                       <td>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.invoiceDetails}
+                            to={all_routes.invoice}
                             className="avatar avatar-lg me-2"
                           >
                             <ImageWithBasePath
@@ -865,7 +865,7 @@ const Invoice = () => {
                           </Link>
                           <div>
                             <h6 className="fw-medium mb-1 fs-14">
-                              <Link to={all_routes.invoiceDetails}>Lori Broaddus</Link>
+                              <Link to={all_routes.invoice}>Lori Broaddus</Link>
                             </h6>
                             <span className="fs-12">broaddus@example.com</span>
                           </div>
@@ -883,10 +883,10 @@ const Invoice = () => {
                       </td>
                       <td>
                         <div className="action-icon d-inline-flex">
-                          <Link to={all_routes.invoiceDetails} className="me-2">
+                          <Link to={all_routes.invoice} className="me-2">
                             <i className="ti ti-eye" />
                           </Link>
-                          <Link to={all_routes.editInvoices} className="me-2">
+                          <Link to={all_routes.addInvoices} className="me-2">
                             <i className="ti ti-edit" />
                           </Link>
                           <Link

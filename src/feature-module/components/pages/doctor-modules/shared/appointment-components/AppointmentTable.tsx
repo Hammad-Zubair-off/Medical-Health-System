@@ -3,8 +3,8 @@ import { useState } from "react";
 import Datatable from "../../../../../../core/common/dataTable/index";
 import StatusBadge from "./StatusBadge";
 import {
-  all_routes,
   doctorsAppointmentDetailsPath,
+  patientDetailsPath,
 } from "../../../../../routes/all_routes";
 import type { Appointment } from "../appointment-types";
 
@@ -93,22 +93,24 @@ const AppointmentTable = ({
     {
       title: "Patient",
       dataIndex: "Patient",
-      render: (text: string, record: Appointment) => (
-        <div className="d-flex align-items-center">
-          <Link
-            to={all_routes.doctorspatientdetails}
-            className="avatar avatar-md me-2"
-          >
-            <PatientAvatar patientImage={record.img} patientName={text} />
-          </Link>
-          <Link to={all_routes.doctorspatientdetails} className="fw-semibold">
-            {text}
-            <span className="text-body fs-13 fw-normal d-block">
-              {record.phone_number}
-            </span>
-          </Link>
-        </div>
-      ),
+      render: (text: string, record: Appointment) => {
+        const patientHref = record.patientId
+          ? patientDetailsPath(record.patientId)
+          : doctorsAppointmentDetailsPath(record.id);
+        return (
+          <div className="d-flex align-items-center">
+            <Link to={patientHref} className="avatar avatar-md me-2">
+              <PatientAvatar patientImage={record.img} patientName={text} />
+            </Link>
+            <Link to={patientHref} className="fw-semibold">
+              {text}
+              <span className="text-body fs-13 fw-normal d-block">
+                {record.phone_number}
+              </span>
+            </Link>
+          </div>
+        );
+      },
       sorter: (a: Appointment, b: Appointment) =>
         a.Patient.localeCompare(b.Patient),
     },

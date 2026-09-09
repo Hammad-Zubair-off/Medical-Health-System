@@ -1,45 +1,84 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
 import FilterIndex from "../../../../../core/common/filter/filterIndex";
 import SearchInput from "../../../../../core/common/dataTable/dataTableSearch";
-import { ExpensesListData } from "../../../../../core/json/expensesListData";
 import Datatable from "../../../../../core/common/dataTable";
 import ExpensesModal from "../modal/expensesModal";
+import { useExpenses } from "../hooks/useExpenses";
+import { formatDate } from "../../../../../core/utils/display.utils";
+import { formatMoney } from "../../../../../core/utils/money.utils";
+
+const methodLabel = (method: string) => {
+  switch (method) {
+    case "bank-transfer":
+      return "Bank Transfer";
+    case "card":
+      return "Card";
+    case "cash":
+      return "Cash";
+    case "insurance":
+      return "Insurance";
+    default:
+      return method || "Other";
+  }
+};
 
 const ExpensesList = () => {
-  const data = ExpensesListData;
+  const { expenses, loading, error } = useExpenses();
+  const [searchText, setSearchText] = useState<string>("");
+
+  const data = useMemo(
+    () =>
+      expenses.map((e) => ({
+        key: e._id,
+        Expense: e.title || "—",
+        Category: e.categoryName || "—",
+        Amount: formatMoney(e.amount),
+        Date: formatDate(e.spentOn),
+        Image: "user-01.jpg",
+        PurchasedBy: e.vendor || "—",
+        PaymentMethod: methodLabel(e.paymentMethod),
+        Status: e.status === "active" ? "Approved" : "Rejected",
+      })),
+    [expenses]
+  );
+
   const columns = [
     {
       title: "Expense",
       dataIndex: "Expense",
-      render: (text: any) => <Link to="">{text}</Link>,
-      sorter: (a: any, b: any) => a.Expense.length - b.Expense.length,
+      render: (text: string) => <Link to="#">{text}</Link>,
+      sorter: (a: { Expense: string }, b: { Expense: string }) =>
+        a.Expense.localeCompare(b.Expense),
     },
     {
       title: "Category",
       dataIndex: "Category",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) => a.Category.length - b.Category.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { Category: string }, b: { Category: string }) =>
+        a.Category.localeCompare(b.Category),
     },
     {
       title: "Amount",
       dataIndex: "Amount",
-      render: (text: any) => (
+      render: (text: string) => (
         <div className="fw-semibold text-dark"> {text} </div>
       ),
-      sorter: (a: any, b: any) => a.Amount.length - b.Amount.length,
+      sorter: (a: { Amount: string }, b: { Amount: string }) =>
+        a.Amount.localeCompare(b.Amount),
     },
     {
       title: "Date",
       dataIndex: "Date",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) => a.Date.length - b.Date.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { Date: string }, b: { Date: string }) =>
+        a.Date.localeCompare(b.Date),
     },
     {
       title: "Purchased By",
       dataIndex: "PurchasedBy",
-      render: (text: any, record: any) => (
+      render: (text: string, record: { Image: string }) => (
         <div className="d-flex align-items-center">
           <Link to="#" className="avatar avatar-md me-2">
             <ImageWithBasePath
@@ -53,19 +92,20 @@ const ExpensesList = () => {
           </Link>
         </div>
       ),
-      sorter: (a: any, b: any) => a.PurchasedBy.length - b.PurchasedBy.length,
+      sorter: (a: { PurchasedBy: string }, b: { PurchasedBy: string }) =>
+        a.PurchasedBy.localeCompare(b.PurchasedBy),
     },
     {
       title: "Payment Method",
       dataIndex: "PaymentMethod",
-      render: (text: any) => <div className="text-dark">{text}</div>,
-      sorter: (a: any, b: any) =>
-        a.PaymentMethod.length - b.PaymentMethod.length,
+      render: (text: string) => <div className="text-dark">{text}</div>,
+      sorter: (a: { PaymentMethod: string }, b: { PaymentMethod: string }) =>
+        a.PaymentMethod.localeCompare(b.PaymentMethod),
     },
     {
       title: "Status",
       dataIndex: "Status",
-      render: (text: any) => (
+      render: (text: string) => (
         <span
           className={`badge border ${
             text === "Approved"
@@ -80,7 +120,8 @@ const ExpensesList = () => {
           {text}
         </span>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
+      sorter: (a: { Status: string }, b: { Status: string }) =>
+        a.Status.localeCompare(b.Status),
     },
     {
       title: "",
@@ -116,31 +157,24 @@ const ExpensesList = () => {
     },
   ];
 
-  const [searchText, setSearchText] = useState<string>("");
-
   const handleSearch = (value: string) => {
     setSearchText(value);
   };
+
   return (
     <>
-      {/* ========================
-			Start Page Content
-		========================= */}
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content">
-          {/* Start Page Header */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-2 pb-3 mb-3 border-1 border-bottom">
             <div className="flex-grow-1">
               <h4 className="fw-bold mb-0">
                 Expenses
                 <span className="badge badge-soft-primary fw-medium border py-1 px-2 border-primary fs-13 ms-1">
-                  Total Expenses : 565
+                  Total Expenses : {loading ? "…" : data.length}
                 </span>
               </h4>
             </div>
             <div className="text-end d-flex">
-              {/* dropdown*/}
               <div className="dropdown me-1">
                 <Link
                   to="#"
@@ -174,8 +208,11 @@ const ExpensesList = () => {
               </Link>
             </div>
           </div>
-          {/* End Page Header */}
-          {/*  Start Filter */}
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
           <div className=" d-flex align-items-center justify-content-between flex-wrap row-gap-3">
             <div className="d-flex align-items-center gap-2">
               <div className="search-set mb-3">
@@ -240,20 +277,19 @@ const ExpensesList = () => {
               </div>
             </div>
           </div>
-          {/*  End Filter */}
-          {/*  Start Table */}
           <div className="table-responsive">
-            <Datatable
-              columns={columns}
-              dataSource={data}
-              Selection={false}
-              searchText={searchText}
-            />
+            {loading && data.length === 0 ? (
+              <p className="text-muted">Loading expenses…</p>
+            ) : (
+              <Datatable
+                columns={columns}
+                dataSource={data}
+                Selection={false}
+                searchText={searchText}
+              />
+            )}
           </div>
-          {/*  End Table */}
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
         <div className="footer text-center bg-white p-2 border-top">
           <p className="text-dark mb-0">
             2025 ©
@@ -263,11 +299,7 @@ const ExpensesList = () => {
             , All Rights Reserved
           </p>
         </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
 
       <ExpensesModal />
     </>

@@ -4,7 +4,7 @@ import {
   all_routes,
   appointmentConsultationsPath,
 } from "../../../../routes/all_routes";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import SearchInput from "../../../../../core/common/dataTable/dataTableSearch";
 import Datatable from "../../../../../core/common/dataTable";
 import { useAppointmentsList } from "./hooks/useAppointmentsList";
@@ -21,6 +21,16 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   cancelled: "Cancelled",
   rescheduled: "Rescheduled",
 };
+
+const STATUS_OPTIONS: AppointmentStatus[] = [
+  "pending",
+  "confirmed",
+  "checked-in",
+  "checked-out",
+  "completed",
+  "cancelled",
+  "rescheduled",
+];
 
 const STATUS_FILTERS: Array<{ value: AppointmentStatus | "all"; label: string }> = [
   { value: "all", label: "All" },
@@ -44,13 +54,23 @@ function formatDateTime(value: Timestamp | Date | undefined): string {
   });
 }
 
-function statusBadgeClass(label: string): string {
-  if (label === "Checked Out") return "badge-soft-info text-info";
-  if (label === "Checked In") return "badge-soft-warning text-warning";
-  if (label === "Cancelled") return "badge-soft-danger text-danger";
-  if (label === "Schedule" || label === "Pending") return "badge-soft-primary text-primary";
-  if (label === "Completed") return "badge-soft-secondary text-secondary";
-  return "badge-soft-success text-success";
+function statusSelectClass(status: AppointmentStatus): string {
+  switch (status) {
+    case "checked-out":
+      return "border-info text-info";
+    case "checked-in":
+      return "border-warning text-warning";
+    case "cancelled":
+      return "border-danger text-danger";
+    case "pending":
+      return "border-primary text-primary";
+    case "completed":
+      return "border-secondary text-secondary";
+    case "confirmed":
+      return "border-success text-success";
+    default:
+      return "border-secondary";
+  }
 }
 
 const Appointments = () => {
@@ -68,6 +88,38 @@ const Appointments = () => {
     cancel,
   } = useAppointmentsList();
 
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const handleStatusChange = async (id: string, next: AppointmentStatus) => {
+    setActionError(null);
+    setBusyId(id);
+    try {
+      await setStatus(id, next);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Failed to update appointment status"
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    if (!window.confirm("Cancel this appointment?")) return;
+    setActionError(null);
+    setBusyId(id);
+    try {
+      await cancel(id);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Failed to cancel appointment"
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const dataSource = useMemo(
     () =>
       appointments.map((a) => ({
@@ -80,7 +132,7 @@ const Appointments = () => {
         Mode:
           a.appointmentType === "video" || a.isVideoCall ? "Online" : "In-Person",
         Status: STATUS_LABELS[a.status] ?? a.status,
-        rawStatus: a.status,
+        rawStatus: a.status as AppointmentStatus,
       })),
     [appointments]
   );
@@ -149,13 +201,29 @@ const Appointments = () => {
     },
     {
       title: "Status",
-      dataIndex: "Status",
-      render: (text: string) => (
-        <span
-          className={`fs-13 badge ${statusBadgeClass(text)} rounded fw-medium`}
+      dataIndex: "rawStatus",
+      width: 170,
+      render: (_: AppointmentStatus, render: (typeof dataSource)[number]) => (
+        <select
+          className={`form-select form-select-sm ${statusSelectClass(render.rawStatus)}`}
+          style={{ minWidth: 140 }}
+          value={render.rawStatus}
+          disabled={busyId === render._id}
+          data-testid={`appointment-status-${render._id}`}
+          aria-label={`Change status for ${render.Patient}`}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            const next = e.target.value as AppointmentStatus;
+            if (next === render.rawStatus) return;
+            void handleStatusChange(render._id, next);
+          }}
         >
-          {text}
-        </span>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </option>
+          ))}
+        </select>
       ),
       sorter: (a: (typeof dataSource)[number], b: (typeof dataSource)[number]) =>
         a.Status.localeCompare(b.Status),
@@ -163,66 +231,23 @@ const Appointments = () => {
     {
       title: "",
       render: (_: unknown, render: (typeof dataSource)[number]) => (
-        <div className="action-item">
-          <Link to="#" data-bs-toggle="dropdown">
-            <i className="ti ti-dots-vertical" />
+        <div className="action-item d-flex gap-1">
+          <Link
+            to={appointmentConsultationsPath(render._id)}
+            className="btn btn-sm btn-outline-primary"
+          >
+            View
           </Link>
-          <ul className="dropdown-menu p-2">
-            <li>
-              <Link
-                to={appointmentConsultationsPath(render._id)}
-                className="dropdown-item d-flex align-items-center"
-              >
-                View
-              </Link>
-            </li>
-            {render.rawStatus === "pending" && (
-              <li>
-                <button
-                  type="button"
-                  className="dropdown-item d-flex align-items-center"
-                  onClick={() => void setStatus(render._id, "confirmed")}
-                >
-                  Confirm
-                </button>
-              </li>
-            )}
-            {(render.rawStatus === "pending" ||
-              render.rawStatus === "confirmed") && (
-              <li>
-                <button
-                  type="button"
-                  className="dropdown-item d-flex align-items-center"
-                  onClick={() => void setStatus(render._id, "checked-in")}
-                >
-                  Check In
-                </button>
-              </li>
-            )}
-            {render.rawStatus === "checked-in" && (
-              <li>
-                <button
-                  type="button"
-                  className="dropdown-item d-flex align-items-center"
-                  onClick={() => void setStatus(render._id, "completed")}
-                >
-                  Complete
-                </button>
-              </li>
-            )}
-            {render.rawStatus !== "cancelled" &&
-              render.rawStatus !== "completed" && (
-                <li>
-                  <button
-                    type="button"
-                    className="dropdown-item d-flex align-items-center text-danger"
-                    onClick={() => void cancel(render._id)}
-                  >
-                    Cancel
-                  </button>
-                </li>
-              )}
-          </ul>
+          {render.rawStatus !== "cancelled" && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger"
+              disabled={busyId === render._id}
+              onClick={() => void handleCancel(render._id)}
+            >
+              Cancel
+            </button>
+          )}
         </div>
       ),
     },
@@ -312,10 +337,19 @@ const Appointments = () => {
               {error}
             </div>
           )}
+          {actionError && (
+            <div
+              className="alert alert-danger"
+              role="alert"
+              data-testid="appointment-status-error"
+            >
+              {actionError}
+            </div>
+          )}
 
           {!error && (
             <>
-              <div className="table-responsive">
+              <div className="table-responsive" style={{ overflow: "visible" }}>
                 <Datatable
                   columns={columns}
                   dataSource={dataSource}

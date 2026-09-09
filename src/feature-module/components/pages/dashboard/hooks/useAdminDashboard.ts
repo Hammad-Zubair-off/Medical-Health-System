@@ -17,6 +17,8 @@ import {
   type AvailableDoctor,
 } from "../../../../../core/services/firestore/admin.service";
 import type { FirestoreAppointment } from "../../../../../core/services/firestore/appointments.service";
+import { listLeaves } from "../../../../../core/services/firestore/leave.service";
+import type { Leave } from "../../../../../core/types/leave.types";
 
 export interface AdminDashboardData {
   loading: boolean;
@@ -52,11 +54,13 @@ export interface AdminDashboardData {
     revenue: number;
   }>;
   availableDoctors: AvailableDoctor[];
+  pendingLeaves: Leave[];
   appointments: FirestoreAppointment[];
   appointmentsWithDetails: Array<FirestoreAppointment & {
     doctor?: { name: string; photoUrl?: string; specialization?: string };
     patient?: { name: string; photoUrl?: string; phone?: string };
   }>;
+  refreshLeaves: () => Promise<void>;
 }
 
 export const useAdminDashboard = (): AdminDashboardData => {
@@ -93,7 +97,17 @@ export const useAdminDashboard = (): AdminDashboardData => {
     revenue: number;
   }>>([]);
   const [availableDoctors, setAvailableDoctors] = useState<AvailableDoctor[]>([]);
+  const [pendingLeaves, setPendingLeaves] = useState<Leave[]>([]);
   const [appointments, setAppointments] = useState<FirestoreAppointment[]>([]);
+
+  const refreshLeaves = async () => {
+    try {
+      const { leaves } = await listLeaves({ status: "pending", pageSize: 5 });
+      setPendingLeaves(leaves);
+    } catch (err) {
+      console.error("Error refreshing leaves:", err);
+    }
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -113,6 +127,7 @@ export const useAdminDashboard = (): AdminDashboardData => {
           income,
           available,
           allAppointments,
+          leaveResult,
         ] = await Promise.all([
           getAdminStatistics(),
           getAppointmentStatistics(),
@@ -124,6 +139,10 @@ export const useAdminDashboard = (): AdminDashboardData => {
           getIncomeByTreatment(),
           getAvailableDoctors(4),
           getAllAppointments(),
+          listLeaves({ status: "pending", pageSize: 5 }).catch((err) => {
+            console.error("Error fetching pending leaves:", err);
+            return { leaves: [] as Leave[], nextCursor: null };
+          }),
         ]);
 
         setStatistics(stats);
@@ -136,6 +155,7 @@ export const useAdminDashboard = (): AdminDashboardData => {
         setIncomeByTreatment(income);
         setAvailableDoctors(available);
         setAppointments(allAppointments);
+        setPendingLeaves(leaveResult.leaves);
       } catch (err) {
         console.error("Error fetching admin dashboard data:", err);
         setError(err instanceof Error ? err.message : "Failed to load dashboard data");
@@ -177,8 +197,10 @@ export const useAdminDashboard = (): AdminDashboardData => {
     scheduleStats,
     incomeByTreatment,
     availableDoctors,
+    pendingLeaves,
     appointments,
     appointmentsWithDetails,
+    refreshLeaves,
   };
 };
 

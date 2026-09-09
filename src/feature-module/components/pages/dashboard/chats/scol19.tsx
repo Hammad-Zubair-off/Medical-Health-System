@@ -1,8 +1,19 @@
-import { useState } from "react";
 import Chart from "react-apexcharts";
 
-const SCol19Chart = () => {
-  const [chartOptions] = useState<any>({
+type Props = {
+  completed?: number[];
+  ongoing?: number[];
+  rescheduled?: number[];
+};
+
+const EMPTY = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+const SCol19Chart = ({
+  completed = EMPTY,
+  ongoing = EMPTY,
+  rescheduled = EMPTY,
+}: Props) => {
+  const chartOptions: Record<string, unknown> = {
     chart: {
       type: "bar",
       height: 250,
@@ -58,9 +69,11 @@ const SCol19Chart = () => {
         style: {
           fontSize: "14px",
         },
-        formatter: (val: number) => `${val / 1000}K`,
+        formatter: (val: number) => `${Math.round(val)}`,
         offsetX: -10,
       },
+      min: 0,
+      forceNiceScale: true,
     },
     legend: {
       position: "bottom",
@@ -74,24 +87,13 @@ const SCol19Chart = () => {
       },
     },
     tooltip: { enabled: true },
-  });
+  };
 
-  const [series] = useState([
-    {
-      name: "Completed",
-      data: [
-        800, 1000, 1200, 1300, 1500, 700, 900, 1000, 1600, 1500, 1200, 1100,
-      ],
-    },
-    {
-      name: "Ongoing",
-      data: [700, 900, 1100, 1000, 1100, 600, 800, 950, 1300, 1200, 1000, 950],
-    },
-    {
-      name: "Rescheduled",
-      data: [600, 700, 1100, 1100, 1900, 500, 700, 850, 1500, 1600, 900, 850],
-    },
-  ]);
+  const series = [
+    { name: "Completed", data: completed },
+    { name: "Ongoing", data: ongoing },
+    { name: "Rescheduled", data: rescheduled },
+  ];
 
   return (
     <div id="s-col-19">

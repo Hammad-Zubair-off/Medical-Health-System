@@ -18,6 +18,8 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "../../../firebase";
 import { toLowerSearchField } from "../../utils/firestore.utils";
+import { holidayMatchesDate } from "../../utils/holiday.utils";
+import { isClinicWideHoliday } from "./holiday.service";
 import { withAudit } from "./_helpers";
 
 export interface DoctorTimeSlots {
@@ -202,7 +204,9 @@ export const getDoctorDataByUserId = async (doctorUserId: string): Promise<Docto
 };
 
 /**
- * Check if a specific date is a holiday for a doctor
+ * Check if a specific date is a holiday for booking.
+ * Clinic-wide `Holiday` docs (active, incl. recurring month/day) block first;
+ * then the doctor's own `holidays` array is checked.
  * @param doctorUserId - The doctor's user ID (uid from Users collection)
  * @param date - The date to check (Date object or Timestamp)
  * @returns true if the date is a holiday, false otherwise
@@ -212,12 +216,6 @@ export const isHoliday = async (
   date: Date | Timestamp
 ): Promise<boolean> => {
   try {
-    const doctorData = await getDoctorDataByUserId(doctorUserId);
-    
-    if (!doctorData?.holidays || !Array.isArray(doctorData.holidays)) {
-      return false;
-    }
-
     // Convert input date to Date for comparison
     let checkDate: Date;
     if (date instanceof Timestamp) {
@@ -228,32 +226,30 @@ export const isHoliday = async (
       return false;
     }
 
-    // Normalize to start of day for comparison (ignore time)
     const checkDateStart = new Date(checkDate);
     checkDateStart.setHours(0, 0, 0, 0);
 
-    // Check if any holiday matches this date
-    return doctorData.holidays.some((holiday: DoctorHoliday) => {
-      let holidayDate: Date;
-      if (holiday.date instanceof Timestamp) {
-        holidayDate = holiday.date.toDate();
-      } else if (holiday.date instanceof Date) {
-        holidayDate = holiday.date;
-      } else {
-        return false;
-      }
+    // Clinic-wide holidays must reject booking even if the doctor has none listed.
+    if (await isClinicWideHoliday(checkDateStart)) {
+      return true;
+    }
 
-      // Normalize holiday date to start of day
-      const holidayDateStart = new Date(holidayDate);
-      holidayDateStart.setHours(0, 0, 0, 0);
+    const doctorData = await getDoctorDataByUserId(doctorUserId);
 
-      // Compare dates (year, month, day only)
-      return (
-        checkDateStart.getFullYear() === holidayDateStart.getFullYear() &&
-        checkDateStart.getMonth() === holidayDateStart.getMonth() &&
-        checkDateStart.getDate() === holidayDateStart.getDate()
-      );
-    });
+    if (!doctorData?.holidays || !Array.isArray(doctorData.holidays)) {
+      return false;
+    }
+
+    return doctorData.holidays.some((holiday: DoctorHoliday) =>
+      holidayMatchesDate(
+        {
+          date: holiday.date,
+          isRecurring: false,
+          status: "active",
+        },
+        checkDateStart
+      )
+    );
   } catch (error) {
     console.error("Error checking holiday:", error);
     // Return false on error to allow appointment creation (fail-safe)
@@ -480,16 +476,15 @@ export const setDoctorStatus = async (
 };
 
 export interface CreateDoctorFormValues extends DoctorProfileFormValues {
-  /** Firebase Auth uid created in the Console (provisioning option c). */
+  /** Firebase Auth uid (from password provisioning or Console). */
   uid: string;
 }
 
 /**
- * Create a `Doctor/{id}` linked to an existing Auth/`Users` account.
+ * Create a `Doctor/{id}` linked to an Auth/`Users` account.
  *
- * Does **not** create the Auth user — the client cannot mint another user's
- * credentials. Admin creates the user in Firebase Console (or seed), pastes
- * the uid here. See docs/DATA_LAYER.md (Step 3.4 option c).
+ * Prefer admin password provisioning via `provisionLoginAccount` (sets `uid`).
+ * Legacy path: paste a Console-created Auth UID when the login already exists.
  */
 export const createDoctor = async (
   values: CreateDoctorFormValues,

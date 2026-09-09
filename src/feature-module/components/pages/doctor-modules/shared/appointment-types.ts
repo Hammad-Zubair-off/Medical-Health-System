@@ -6,6 +6,7 @@ export interface Appointment {
   AppointmentId: string; // Appointment ID from Firestore
   Date_Time: string; // Formatted date/time string for display
   Patient: string; // Patient name
+  patientId?: string | null; // Patient/{id} when known
   img?: string; // Patient image URL (from patient.photo_url)
   phone_number: string; // Patient phone number
   Mode: string; // "In-Person" or "Online"

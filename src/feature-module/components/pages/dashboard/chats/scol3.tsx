@@ -1,8 +1,13 @@
-import { useState } from "react";
 import Chart from "react-apexcharts";
 
-const SCol3Chart = () => {
-  const [sCol3Chart] = useState<any>({
+type Props = {
+  data?: number[];
+};
+
+const SCol3Chart = ({ data }: Props) => {
+  const seriesData = data && data.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
+
+  const sCol3Chart: Record<string, unknown> = {
     chart: {
       width: 80,
       height: 54,
@@ -28,32 +33,15 @@ const SCol3Chart = () => {
     yaxis: { show: false },
     grid: { show: false },
     tooltip: { enabled: false },
-    colors: [
-      "#06AED4",
-      "#06AED4",
-      "#06AED4",
-      "#06AED4",
-      "#06AED4",
-      "#06AED4",
-      "#06AED4",
-    ],
-    fill: {
-      type: "solid",
-    },
-  });
-
-  const [series] = useState([
-    {
-      name: "Data",
-      data: [80, 35, 50, 45, 35, 60, 50], // Y values only
-    },
-  ]);
+    colors: Array(seriesData.length).fill("#06AED4"),
+    fill: { type: "solid" },
+  };
 
   return (
     <div id="s-col-3">
       <Chart
         options={sCol3Chart}
-        series={series}
+        series={[{ name: "Data", data: seriesData }]}
         type="bar"
         width={80}
         height={54}

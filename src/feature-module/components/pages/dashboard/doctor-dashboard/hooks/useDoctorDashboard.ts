@@ -277,16 +277,23 @@ export const useDoctorDashboard = (doctorUserId: string | null): DashboardData =
       return aptDate > now;
     }).length;
 
+    const rescheduled = appointments.filter((apt) => apt.status === "rescheduled").length;
+    // Walk-ins: clinical patient linked, no login user (UserPatientID null)
+    const walkinBookings = appointments.filter((apt) => !getPatientId(apt.UserPatientID)).length;
+    const followUps = appointments.filter((apt) =>
+      /follow[\s-]?up/i.test(`${apt.Complain ?? ""} ${apt.description ?? ""}`)
+    ).length;
+
     return {
       totalAppointments,
       onlineConsultations,
       cancelledAppointments,
       totalPatients,
       videoConsultations,
-      rescheduled: 0,
+      rescheduled,
       preVisitBookings,
-      walkinBookings: 0,
-      followUps: 0,
+      walkinBookings,
+      followUps,
       completed,
       pending,
       cancelled,
@@ -404,7 +411,16 @@ export const useDoctorDashboard = (doctorUserId: string | null): DashboardData =
     const previous7DaysConfirmed = previous7DaysAppointments.filter(
       (apt) => apt.status === "confirmed"
     ).length;
-        
+
+    const countRescheduled = (list: typeof appointments) =>
+      list.filter((apt) => apt.status === "rescheduled").length;
+    const countWalkin = (list: typeof appointments) =>
+      list.filter((apt) => !getPatientId(apt.UserPatientID)).length;
+    const countFollowUps = (list: typeof appointments) =>
+      list.filter((apt) =>
+        /follow[\s-]?up/i.test(`${apt.Complain ?? ""} ${apt.description ?? ""}`)
+      ).length;
+
     return {
       totalAppointmentsTrend: calculateTrend(last7DaysTotal, previous7DaysTotal),
       onlineConsultationsTrend: calculateTrend(last7DaysOnline, previous7DaysOnline),
@@ -412,10 +428,19 @@ export const useDoctorDashboard = (doctorUserId: string | null): DashboardData =
       completedTrend: calculateTrend(last7DaysCompleted, previous7DaysCompleted),
       totalPatientsTrend: calculateTrend(last7DaysTotalPatients, previous7DaysTotalPatients),
       videoConsultationsTrend: calculateTrend(last7DaysOnline, previous7DaysOnline),
-      rescheduledTrend: calculateTrend(0, 0),
+      rescheduledTrend: calculateTrend(
+        countRescheduled(last7DaysAppointments),
+        countRescheduled(previous7DaysAppointments)
+      ),
       preVisitBookingsTrend: calculateTrend(last7DaysPreVisit, previous7DaysPreVisit),
-      walkinBookingsTrend: calculateTrend(0, 0),
-      followUpsTrend: calculateTrend(0, 0),
+      walkinBookingsTrend: calculateTrend(
+        countWalkin(last7DaysAppointments),
+        countWalkin(previous7DaysAppointments)
+      ),
+      followUpsTrend: calculateTrend(
+        countFollowUps(last7DaysAppointments),
+        countFollowUps(previous7DaysAppointments)
+      ),
       upcomingTrend: calculateTrend(last7DaysUpcoming, previous7DaysUpcoming),
       confirmedTrend: calculateTrend(last7DaysConfirmed, previous7DaysConfirmed),
     };

@@ -7,12 +7,12 @@ import "react-phone-number-input/style.css";
 import { Link } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import CommonSelect from "../../../../../core/common/common-select/commonSelect";
+import { Blood_Group } from "../../../../../core/common/selectOption";
 import {
-  Blood_Group,
-  City,
-  Country,
-  State,
-} from "../../../../../core/common/selectOption";
+  GEO_CITIES,
+  GEO_COUNTRIES,
+  GEO_STATES,
+} from "../../../../../core/constants/geo";
 import { all_routes } from "../../../../routes/all_routes";
 import {
   patientFormSchema,
@@ -33,9 +33,19 @@ const STATUS_OPTIONS = [
 ];
 
 const BLOOD_OPTIONS = Blood_Group.filter((o) => o.value !== "Select");
-const COUNTRY_OPTIONS = Country.filter((o) => o.value !== "Select");
-const STATE_OPTIONS = State.filter((o) => o.value !== "Select");
-const CITY_OPTIONS = City.filter((o) => o.value !== "Select");
+const COUNTRY_OPTIONS = GEO_COUNTRIES;
+const STATE_OPTIONS = GEO_STATES;
+const CITY_OPTIONS = GEO_CITIES;
+
+const TEMP_UNIT_OPTIONS = [
+  { value: "F", label: "°F" },
+  { value: "C", label: "°C" },
+];
+
+const WEIGHT_UNIT_OPTIONS = [
+  { value: "kg", label: "kg" },
+  { value: "lb", label: "lb" },
+];
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -58,6 +68,17 @@ const EMPTY_VALUES: PatientFormSchema = {
   state: "California",
   city: "Los Angeles",
   postalCode: "",
+  bloodPressure: "",
+  heartRate: "",
+  spo2: "",
+  temperature: "",
+  temperatureUnit: "F",
+  respiratoryRate: "",
+  weight: "",
+  weightUnit: "kg",
+  createLogin: false,
+  password: "",
+  confirmPassword: "",
 };
 
 export interface PatientFormProps {
@@ -65,6 +86,8 @@ export interface PatientFormProps {
   submitting: boolean;
   error: string | null;
   submitLabel: string;
+  /** Show optional Auth password fields (create patient only). */
+  showLoginOption?: boolean;
   onSubmit: (values: PatientFormValues) => Promise<void>;
 }
 
@@ -73,6 +96,7 @@ const PatientForm = ({
   submitting,
   error,
   submitLabel,
+  showLoginOption = false,
   onSubmit,
 }: PatientFormProps) => {
   const [doctorOptions, setDoctorOptions] = useState<{ value: string; label: string }[]>([]);
@@ -97,12 +121,15 @@ const PatientForm = ({
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<PatientFormSchema>({
     resolver: zodResolver(patientFormSchema),
     defaultValues: mergedDefaults,
     values: mergedDefaults,
   });
+
+  const watchCreateLogin = watch("createLogin");
 
   const getModalContainer = () => {
     const modalElement = document.getElementById("modal-datepicker");
@@ -111,6 +138,7 @@ const PatientForm = ({
 
   return (
     <form
+      data-testid="patient-form"
       onSubmit={handleSubmit(async (values) => {
         await onSubmit(values);
       })}
@@ -130,7 +158,12 @@ const PatientForm = ({
                   <label className="form-label mb-1 fw-medium">
                     First Name<span className="text-danger ms-1">*</span>
                   </label>
-                  <input type="text" className="form-control" {...register("firstName")} />
+                  <input
+                    type="text"
+                    className="form-control"
+                    data-testid="patient-first-name"
+                    {...register("firstName")}
+                  />
                   <FieldError message={errors.firstName?.message} />
                 </div>
               </div>
@@ -139,7 +172,12 @@ const PatientForm = ({
                   <label className="form-label mb-1 fw-medium">
                     Last Name<span className="text-danger ms-1">*</span>
                   </label>
-                  <input type="text" className="form-control" {...register("lastName")} />
+                  <input
+                    type="text"
+                    className="form-control"
+                    data-testid="patient-last-name"
+                    {...register("lastName")}
+                  />
                   <FieldError message={errors.lastName?.message} />
                 </div>
               </div>
@@ -167,7 +205,12 @@ const PatientForm = ({
                   <label className="form-label mb-1 fw-medium">
                     Email Address<span className="text-danger ms-1">*</span>
                   </label>
-                  <input type="email" className="form-control" {...register("email")} />
+                  <input
+                    type="email"
+                    className="form-control"
+                    data-testid="patient-email"
+                    {...register("email")}
+                  />
                   <FieldError message={errors.email?.message} />
                 </div>
               </div>
@@ -289,7 +332,12 @@ const PatientForm = ({
                   <label className="form-label mb-1 fw-medium">
                     Address 1<span className="text-danger ms-1">*</span>
                   </label>
-                  <input type="text" className="form-control" {...register("addressLine1")} />
+                  <input
+                    type="text"
+                    className="form-control"
+                    data-testid="patient-address"
+                    {...register("addressLine1")}
+                  />
                   <FieldError message={errors.addressLine1?.message} />
                 </div>
               </div>
@@ -364,11 +412,214 @@ const PatientForm = ({
                   <label className="form-label mb-1">
                     Pincode<span className="text-danger ms-1">*</span>
                   </label>
-                  <input type="text" className="form-control" {...register("postalCode")} />
+                  <input
+                    type="text"
+                    className="form-control"
+                    data-testid="patient-postal"
+                    {...register("postalCode")}
+                  />
                   <FieldError message={errors.postalCode?.message} />
                 </div>
               </div>
             </div>
+            <h6 className="fw-bold mb-1 border-top pt-3">
+              Vital Signs{" "}
+              <span className="fw-normal text-muted fs-13">(optional)</span>
+            </h6>
+            <p className="text-muted fs-13 mb-3">
+              Leave blank if vitals were not measured at registration. Nothing is
+              assumed.
+            </p>
+            <div className="row">
+              <div className="col-md-4">
+                <div className="mb-3">
+                  <label className="form-label mb-1 fw-medium">
+                    Blood Pressure (mmHg)
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. 120/80"
+                    data-testid="patient-vitals-bp"
+                    {...register("bloodPressure")}
+                  />
+                  <FieldError message={errors.bloodPressure?.message} />
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="mb-3">
+                  <label className="form-label mb-1 fw-medium">
+                    Heart Rate (bpm)
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. 72"
+                    data-testid="patient-vitals-hr"
+                    {...register("heartRate")}
+                  />
+                  <FieldError message={errors.heartRate?.message} />
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="mb-3">
+                  <label className="form-label mb-1 fw-medium">SPO2 (%)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. 98"
+                    data-testid="patient-vitals-spo2"
+                    {...register("spo2")}
+                  />
+                  <FieldError message={errors.spo2?.message} />
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="mb-3">
+                  <label className="form-label mb-1 fw-medium">Temperature</label>
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. 98.6"
+                      data-testid="patient-vitals-temp"
+                      {...register("temperature")}
+                    />
+                    <Controller
+                      name="temperatureUnit"
+                      control={control}
+                      render={({ field }) => (
+                        <select
+                          className="form-select"
+                          style={{ maxWidth: 80 }}
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(e.target.value as "C" | "F")
+                          }
+                        >
+                          {TEMP_UNIT_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    />
+                  </div>
+                  <FieldError message={errors.temperature?.message} />
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="mb-3">
+                  <label className="form-label mb-1 fw-medium">
+                    Respiratory Rate (rpm)
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. 16"
+                    data-testid="patient-vitals-rr"
+                    {...register("respiratoryRate")}
+                  />
+                  <FieldError message={errors.respiratoryRate?.message} />
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="mb-3">
+                  <label className="form-label mb-1 fw-medium">Weight</label>
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. 70"
+                      data-testid="patient-vitals-weight"
+                      {...register("weight")}
+                    />
+                    <Controller
+                      name="weightUnit"
+                      control={control}
+                      render={({ field }) => (
+                        <select
+                          className="form-select"
+                          style={{ maxWidth: 80 }}
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(e.target.value as "kg" | "lb")
+                          }
+                        >
+                          {WEIGHT_UNIT_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    />
+                  </div>
+                  <FieldError message={errors.weight?.message} />
+                </div>
+              </div>
+            </div>
+            {showLoginOption && (
+              <>
+                <h6 className="fw-bold mb-1 border-top pt-3">Login access</h6>
+                <p className="text-muted fs-13 mb-3">
+                  Optionally create a portal login so this patient can sign in with
+                  their email. Leave unchecked for walk-in patients without an
+                  account.
+                </p>
+                <div className="row">
+                  <div className="col-12">
+                    <div className="form-check mb-3">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="patient-create-login"
+                        data-testid="patient-create-login"
+                        {...register("createLogin")}
+                      />
+                      <label className="form-check-label" htmlFor="patient-create-login">
+                        Create login account for this patient
+                      </label>
+                    </div>
+                  </div>
+                  {watchCreateLogin && (
+                    <>
+                      <div className="col-md-6">
+                        <div className="mb-3">
+                          <label className="form-label mb-1 fw-medium">
+                            Password<span className="text-danger ms-1">*</span>
+                          </label>
+                          <input
+                            type="password"
+                            className="form-control"
+                            autoComplete="new-password"
+                            data-testid="patient-password"
+                            {...register("password")}
+                          />
+                          <FieldError message={errors.password?.message} />
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="mb-3">
+                          <label className="form-label mb-1 fw-medium">
+                            Confirm password<span className="text-danger ms-1">*</span>
+                          </label>
+                          <input
+                            type="password"
+                            className="form-control"
+                            autoComplete="new-password"
+                            data-testid="patient-confirm-password"
+                            {...register("confirmPassword")}
+                          />
+                          <FieldError message={errors.confirmPassword?.message} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -376,7 +627,12 @@ const PatientForm = ({
         <Link to={all_routes.patients} className="btn btn-light me-2">
           Cancel
         </Link>
-        <button type="submit" className="btn btn-primary" disabled={submitting}>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          data-testid="patient-submit"
+          disabled={submitting}
+        >
           {submitting && (
             <span className="spinner-border spinner-border-sm me-2" role="status" />
           )}

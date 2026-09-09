@@ -7,14 +7,37 @@ import {
   Doctor,
   Status,
 } from "../../../../../core/common/selectOption";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import SearchInput from "../../../../../core/common/dataTable/dataTableSearch";
-import { DoctorLeavesData } from "../../../../../core/json/doctorLeavesData";
 import Datatable from "../../../../../core/common/dataTable";
 import Modals from "./modals/modals";
+import { useAuth } from "../../../../../core/context/AuthContext";
+import { useLeaves } from "../../hrm-modules/hooks/useLeaves";
+import { formatDate } from "../../../../../core/utils/display.utils";
 
 const DoctorsLeaves = () => {
-  const data = DoctorLeavesData;
+  const { user } = useAuth();
+  const { leaves, loading, error } = useLeaves({
+    staffUserId: user?.uid,
+  });
+  const data = useMemo(
+    () =>
+      leaves.map((l) => ({
+        key: l._id,
+        id: l._id,
+        Date: `${formatDate(l.from)} - ${formatDate(l.to)}`,
+        Leave_Type: l.leaveTypeName || "—",
+        Day: `${String(l.days).padStart(2, "0")} Day${l.days === 1 ? "" : "s"}`,
+        Applied_On: formatDate(l.created),
+        Status:
+          l.status === "approved"
+            ? "Approved"
+            : l.status === "rejected"
+              ? "Rejected"
+              : "Applied",
+      })),
+    [leaves]
+  );
   const columns = [
     {
       title: "Date",
@@ -334,6 +357,10 @@ const DoctorsLeaves = () => {
           {/* End Filter */}
           {/* Start Table */}
           <div className="table-responsive">
+            {error ? <div className="alert alert-danger">{error}</div> : null}
+            {loading && data.length === 0 ? (
+              <p className="text-muted">Loading leaves…</p>
+            ) : null}
             <Datatable
               columns={columns}
               dataSource={data}

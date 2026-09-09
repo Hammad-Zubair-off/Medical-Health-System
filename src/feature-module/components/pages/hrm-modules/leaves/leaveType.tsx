@@ -1,10 +1,24 @@
+import { useMemo } from "react";
 import { Link } from "react-router";
-import { LeaveTypeData } from "../../../../../core/json/leaveTypeData";
 import Datatable from "../../../../../core/common/dataTable";
 import LeaveTypeModal from "./modal/leaveTypeModal";
+import { useLeaveTypes } from "../hooks/useLeaves";
+import { formatDate } from "../../../../../core/utils/display.utils";
 
 const LeaveType = () => {
-  const data = LeaveTypeData;
+  const { leaveTypes, loading, error } = useLeaveTypes();
+  const data = useMemo(
+    () =>
+      leaveTypes.map((t) => ({
+        key: t._id,
+        id: t._id,
+        LeaveType: t.name,
+        LeaveQuota: t.daysAllowedPerYear,
+        CreatedOn: formatDate(t.created),
+        Status: t.status === "active" ? "Active" : "Inactive",
+      })),
+    [leaveTypes]
+  );
   const columns = [
     {
       title: "Leave Type",
@@ -86,7 +100,12 @@ const LeaveType = () => {
           {/* Page Header */}
           <div className="mb-3 border-bottom pb-3">
             <div className="d-flex align-items-center justify-content-between">
-              <h4 className="fw-bold mb-0">Leave Type</h4>
+              <h4 className="fw-bold mb-0">
+                Leave Type{" "}
+                <span className="badge badge-soft-primary border ms-2">
+                  {loading ? "…" : data.length}
+                </span>
+              </h4>
               <Link
                 to="#"
                 className="btn btn-primary"
@@ -101,6 +120,7 @@ const LeaveType = () => {
           {/* End Page Header */}
           {/* Table List */}
           <div className="table-responsive border">
+            {error ? <div className="alert alert-danger">{error}</div> : null}
             <Datatable
               columns={columns}
               dataSource={data}

@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-# dist
+dist
 dist-ssr
 *.local
 
@@ -41,3 +41,16 @@ node_modules/
 .env.production.local
 scripts/serviceAccountKey.json
 
+# Filesystem / editor junk
+.fuse_hidden*
+
+# Root planning / audit notes (keep README only)
+/*.md
+!/README.md
+
+# Docs: QA artifacts, screenshots, ephemeral UAT notes
+# Keep canonical references: AUTH, DATA_LAYER, DEMO_ACCOUNTS, FILE_MANAGER, DATA_MIGRATION_*
+docs/qa-screenshots/
+docs/MANUAL_QA_*
+docs/GATE_*
+docs/UAT_*

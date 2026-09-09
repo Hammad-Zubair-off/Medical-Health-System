@@ -58,12 +58,53 @@ Never `getDocs(collection(db, X))` with no `limit`. Never `await` inside a `for`
 4. `firebase deploy --only firestore:indexes`
 5. **Commit the file.** An index that exists only in the console is invisible to the next developer.
 
-Current composites (Patients / Doctors / Specializations / Appointments):
+Current composites (Patients / Doctors / Specializations / Appointments / Prescriptions /
+Finance / Misc):
 
 - `Patient`: `status + displayNameLower`, `primaryDoctorId + status`
 - `Doctor`: `status + displayNameLower`, `specializationId + status`
 - `Specialization`: `status + nameLower`
 - `Appointment`: `status + appointmentDate`, `doctorUserId + appointmentDate`, `patientId + appointmentDate`, `doctorId + appointmentDate`
+- `Prescription`: `doctorUserId + prescribedOn`, `patientUserId + prescribedOn`, `patientId + prescribedOn`, `status + prescribedOn`
+- `Invoice` / `Payment` / `Expense` / `ExpenseCategory`: see `firestore.indexes.json`
+- `Asset`: `status + nameLower`, `locationId + status`, `locationId + nameLower`
+- `Location` / `Service`: `status + nameLower`
+
+### Reports (no new collections)
+
+Client-side from existing collections via `report.service.ts` + `report.utils.ts`:
+default last 30 days, max 366-day span, hard cap 5,000 docs per query (paginated batches of 500).
+
+### Clinic misc collections
+
+| Collection | Money fields | Rules |
+|---|---|---|
+| `Asset` | `purchaseCost` (minor units) | signed-in read; admin write |
+| `Location` | — | signed-in read; admin write |
+| `Service` | `price` (minor units) | signed-in read; admin write |
+
+Address dropdowns for patient forms use static `src/core/constants/geo.ts` (CMS countries/states/cities deleted).
+
+### Clinic settings (free-tier admin Settings)
+
+| Collection / doc | Purpose | Rules |
+|---|---|---|
+| `ClinicSettings/main` | Organization, working hours, appointment prefs (store-only), invoice prefix/terms, payment method flags, GDPR, maintenance, preferences | signed-in read; admin write |
+| `CancellationReason` | Soft-delete lookup | signed-in read; admin create/update; no delete |
+| `TaxRate` / `Currency` / `BankAccount` | Finance lookups | same |
+
+- Invoice numbers: `Counter/invoice` + prefix from `ClinicSettings.invoice.prefix` (via `allocateInvoiceNumberInTx`).
+- Hook: `src/core/hooks/useClinicSettings.ts`.
+- Out of scope: SMS/email delivery, call UIs, Stripe, cron/backups.
+
+### File Manager (Cloudinary)
+
+| Collection | Purpose | Rules |
+|---|---|---|
+| `FileObject` | Metadata for Cloudinary assets (`publicId` + `secureUrl`, `sharedWith[]`, optional `appointmentId`) | owner / shared / admin read; owner create; soft-delete only |
+| `FileFolder` | One-level folders | owner / admin |
+
+Assets are **not** in Firebase Storage. See `docs/FILE_MANAGER.md`.
 
 ### Appointment conventions
 
@@ -77,15 +118,9 @@ Current composites (Patients / Doctors / Specializations / Appointments):
 
 ## Doctor account provisioning (Step 3.4)
 
-**Decision: option (c) — interim Console UID paste.**
+**Decision: admin password provisioning via secondary Auth app** (`provisionLoginAccount` in `auth.service.ts`), with optional legacy Console UID paste on Add Doctor.
 
-The browser cannot create another user's Firebase Auth account. Admin:
-
-1. Creates the Auth user in Firebase Console (email/password)
-2. Pastes the UID into Add Doctor
-3. `createDoctor()` writes `Doctor/{id}` with `userid` → `Users/{uid}` and sets `role: "doctor"`
-
-Cloud Functions / invite-link (options a/b) need Blaze and are deferred.
+Cloud Functions invite-link still optional for production hardening.
 
 ---
 
@@ -97,5 +132,8 @@ Cloud Functions / invite-link (options a/b) need Blaze and are deferred.
 | `src/core/schemas/_shared.ts` | `timestampSchema`, `auditFieldsSchema`, `parseDoc` (log + skip) |
 | `src/core/services/firestore/_helpers.ts` | `getDocsByIds` (chunk 10), `withAudit`, `chunk` |
 | `src/core/utils/display.utils.ts` | `formatDate`, `ageFromDob`, `formatAddress` |
+| `src/core/utils/money.utils.ts` | `toMinor`, `fromMinor`, `formatMoney` (integer minor units) |
+| `src/core/utils/report.utils.ts` | date-range validation, grouping, `%` change |
+| `src/core/constants/geo.ts` | static country/state/city options |
 
 `useFirestoreCollection` was skipped — TanStack Query is still in `REMAINING.md` Group 2.

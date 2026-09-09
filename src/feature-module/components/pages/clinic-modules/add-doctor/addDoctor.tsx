@@ -23,15 +23,12 @@ const AddDoctor = () => {
               </div>
             </div>
             <DoctorForm
-              requireUid
+              createLogin
               submitting={submitting}
               error={error}
               submitLabel="Add Doctor"
               onSubmit={async (values) => {
-                const id = await createDoctor({
-                  ...values,
-                  uid: values.uid,
-                });
+                const id = await createDoctor(values);
                 navigate(doctorsDetailsPath(id));
               }}
             />

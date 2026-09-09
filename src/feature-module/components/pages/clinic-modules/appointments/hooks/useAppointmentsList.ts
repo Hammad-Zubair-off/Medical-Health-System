@@ -88,8 +88,19 @@ export function useAppointmentsList(
 
   const setStatus = useCallback(
     async (id: string, status: AppointmentStatus) => {
-      await updateAppointment(id, { status });
-      await refresh();
+      try {
+        await updateAppointment(id, { status });
+        // Optimistic local update so the select reflects immediately
+        setAppointments((prev) =>
+          prev.map((a) => (a._id === id ? { ...a, status } : a))
+        );
+        await refresh();
+      } catch (err) {
+        console.error("Error updating appointment status:", err);
+        throw err instanceof Error
+          ? err
+          : new Error("Failed to update appointment status");
+      }
     },
     [refresh]
   );
