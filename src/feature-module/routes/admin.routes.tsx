@@ -5,12 +5,9 @@ import { all_routes } from "./all_routes";
 const routes = all_routes;
 
 const Activities = lazyPage(() => import("../components/pages/clinic-modules/activities/activities"));
-const AddBlog = lazyPage(() => import("../components/pages/content-modules/add-blog/addBlog"));
 const AddDoctor = lazyPage(() => import("../components/pages/clinic-modules/add-doctor/addDoctor"));
 const AddInoivce = lazyPage(() => import("../components/pages/application-modules/application/invoice/add-invoice/addInoivce"));
 const AddInvoices = lazyPage(() => import("../components/pages/finance-accounts-module/invoices/addInvoices"));
-const AddPages = lazyPage(() => import("../components/pages/content-modules/add-page/addPages"));
-const AnnouncementsList = lazyPage(() => import("../components/pages/support-modules/announcements"));
 const AppointmentCalendar = lazyPage(() => import("../components/pages/clinic-modules/appointment-calendar/appointmentCalendar"));
 const AppointmentConsultations = lazyPage(() => import("../components/pages/clinic-modules/appointment-consultations/appointmentConsultations"));
 const AppointmentReport = lazyPage(() => import("../components/pages/administration-modules/reports/appointment-report/appointmentReport"));
@@ -20,37 +17,27 @@ const Assets = lazyPage(() => import("../components/pages/clinic-modules/assets/
 const AttendanceList = lazyPage(() => import("../components/pages/hrm-modules/attendance"));
 const BanIpAddressSettings = lazyPage(() => import("../components/pages/settings-modules/other-settings/ban-ip-address-settings/banIpAddressSettings"));
 const BankAccountsSettings = lazyPage(() => import("../components/pages/settings-modules/finance-settings/bank-accounts-settings/bankAccountsSettings"));
-const BlogCategories = lazyPage(() => import("../components/pages/content-modules/blog-categories/blogCategories"));
-const BlogComments = lazyPage(() => import("../components/pages/content-modules/blog-comments/blogComments"));
-const Blogs = lazyPage(() => import("../components/pages/content-modules/blogs/blogs"));
 const CancellationReasonSettings = lazyPage(() => import("../components/pages/settings-modules/clinic-settings/cancellation-reason-settings/cancellationReasonSettings"));
-const Cities = lazyPage(() => import("../components/pages/content-modules/cities/cities"));
 const ClearCacheSettings = lazyPage(() => import("../components/pages/settings-modules/other-settings/clear-cache-settings/clearCacheSettings"));
-const ContactMessages = lazyPage(() => import("../components/pages/support-modules/contactMessages"));
-const Countries = lazyPage(() => import("../components/pages/content-modules/countries/countries"));
 const CreatePatient = lazyPage(() => import("../components/pages/clinic-modules/create-patient/createPatient"));
 const CronjobSettings = lazyPage(() => import("../components/pages/settings-modules/other-settings/cronjob-settings/cronjobSettings"));
 const CurrenciesSettings = lazyPage(() => import("../components/pages/settings-modules/finance-settings/currencies-settings/currenciesSettings"));
 const CustomFieldsSettings = lazyPage(() => import("../components/pages/settings-modules/clinic-settings/custom-fields-settings/customFieldsSettings"));
 const Dashboard = lazyPage(() => import("../components/pages/dashboard/dashboard"));
 const DatabaseBackupSettings = lazyPage(() => import("../components/pages/settings-modules/other-settings/database-backup-settings/databaseBackupSettings"));
-const DeleteAccountRequest = lazyPage(() => import("../components/pages/administration-modules/users/delete-account-request/deleteAccountRequest"));
 const DesignationList = lazyPage(() => import("../components/pages/hrm-modules/designation"));
 const DoctorDetails = lazyPage(() => import("../components/pages/clinic-modules/doctor-details/doctorDetails"));
 const DoctorSchedules = lazyPage(() => import("../components/pages/doctor-modules/doctors-schedules/doctorSchedules"));
 const Doctors = lazyPage(() => import("../components/pages/clinic-modules/doctors/doctors"));
 const DoctorsList = lazyPage(() => import("../components/pages/clinic-modules/doctors-list/doctorsList"));
-const EditBlog = lazyPage(() => import("../components/pages/content-modules/edit-blog/editBlog"));
 const EditDoctor = lazyPage(() => import("../components/pages/clinic-modules/edit-doctor/editDoctor"));
 const EditInvoices = lazyPage(() => import("../components/pages/finance-accounts-module/invoices/editInvoices"));
-const EditPage = lazyPage(() => import("../components/pages/content-modules/edit-page/editPage"));
 const EditPatient = lazyPage(() => import("../components/pages/clinic-modules/edit-patient/editPatient"));
 const EmailSettings = lazyPage(() => import("../components/pages/settings-modules/system-settings/email-settings/emailSettings"));
 const EmailTemplatesSettings = lazyPage(() => import("../components/pages/settings-modules/system-settings/email-templates-settings/emailTemplatesSettings"));
 const ExpenseCategory = lazyPage(() => import("../components/pages/finance-accounts-module/expenses/expenseCategory"));
 const ExpenseReport = lazyPage(() => import("../components/pages/administration-modules/reports/expense-report/expenseReport"));
 const ExpensesList = lazyPage(() => import("../components/pages/finance-accounts-module/expenses/expenses"));
-const Faq = lazyPage(() => import("../components/pages/content-modules/faq/faq"));
 const Gallery = lazyPage(() => import("../components/pages/pages-module/gallery"));
 const GdprCookiesSettings = lazyPage(() => import("../components/pages/settings-modules/system-settings/gdpr-cookies-settings/gdprCookiesSettings"));
 const HolidaysList = lazyPage(() => import("../components/pages/hrm-modules/holidays"));
@@ -73,11 +60,9 @@ const LoginAndRegisterSettings = lazyPage(() => import("../components/pages/sett
 const MaintenanceModeSettings = lazyPage(() => import("../components/pages/settings-modules/website-settings/maintenance-mode-settings/maintenanceModeSettings"));
 const Messages = lazyPage(() => import("../components/pages/clinic-modules/messages/messages"));
 const NewAppointment = lazyPage(() => import("../components/pages/clinic-modules/new-appointment/newAppointment"));
-const Newsletters = lazyPage(() => import("../components/pages/support-modules/newsletters"));
 const Notifications = lazyPage(() => import("../components/pages/application-modules/application/notifications/notifications"));
 const NotificationsSettings = lazyPage(() => import("../components/pages/settings-modules/account-settings/notifications-settings/notificationsSettings"));
 const OrganizationSettings = lazyPage(() => import("../components/pages/settings-modules/website-settings/organization-settings/organizationSettings"));
-const Pages = lazyPage(() => import("../components/pages/content-modules/page/pages"));
 const PatientDetails = lazyPage(() => import("../components/pages/clinic-modules/patient-details/patientDetails"));
 const PatientReport = lazyPage(() => import("../components/pages/administration-modules/reports/patient-report/patientReport"));
 const Patients = lazyPage(() => import("../components/pages/clinic-modules/patients/patients"));
@@ -86,7 +71,6 @@ const PaymentMethodsSettings = lazyPage(() => import("../components/pages/settin
 const PaymentsList = lazyPage(() => import("../components/pages/finance-accounts-module/payments"));
 const PayrollList = lazyPage(() => import("../components/pages/hrm-modules/payroll"));
 const PayrollTwo = lazyPage(() => import("../components/pages/hrm-modules/payrollTwo"));
-const Permissions = lazyPage(() => import("../components/pages/administration-modules/users/permissions/permissions"));
 const PreferencesSettings = lazyPage(() => import("../components/pages/settings-modules/website-settings/preferences-settings/preferencesSettings"));
 const PrefixesSettings = lazyPage(() => import("../components/pages/settings-modules/website-settings/prefixes-settings/prefixesSettings"));
 const Pricing = lazyPage(() => import("../components/pages/pages-modules/pricing/pricing"));
@@ -94,7 +78,6 @@ const PrivacyPolicy = lazyPage(() => import("../components/pages/pages-modules/p
 const Profile = lazyPage(() => import("../components/pages/pages-module/profile"));
 const ProfileSettings = lazyPage(() => import("../components/pages/settings-modules/account-settings/profile-settings/profileSettings"));
 const ProfitAndLoss = lazyPage(() => import("../components/pages/administration-modules/reports/profit-and-loss/profitAndLoss"));
-const RolesAndPermissions = lazyPage(() => import("../components/pages/administration-modules/users/roles-and-permissions/rolesAndPermissions"));
 const SecuritySettings = lazyPage(() => import("../components/pages/settings-modules/account-settings/security-settings/securitySettings"));
 const SeoSetupSettings = lazyPage(() => import("../components/pages/settings-modules/website-settings/seo-setup-settings/seoSetupSettings"));
 const Services = lazyPage(() => import("../components/pages/clinic-modules/services/services"));
@@ -105,14 +88,10 @@ const SmsTemplatesSettings = lazyPage(() => import("../components/pages/settings
 const Specializations = lazyPage(() => import("../components/pages/clinic-modules/specializations/specializations"));
 const StaffsList = lazyPage(() => import("../components/pages/hrm-modules/staffs"));
 const Starter = lazyPage(() => import("../components/pages/pages-module/starter"));
-const States = lazyPage(() => import("../components/pages/content-modules/states/states"));
 const StorageSettings = lazyPage(() => import("../components/pages/settings-modules/other-settings/storage-settings/storageSettings"));
 const SystemBackupSettings = lazyPage(() => import("../components/pages/settings-modules/other-settings/system-backup-settings/systemBackupSettings"));
 const SystemUpdate = lazyPage(() => import("../components/pages/settings-modules/other-settings/system-update/systemUpdate"));
 const TaxRatesSettings = lazyPage(() => import("../components/pages/settings-modules/finance-settings/tax-rates-settings/taxRatesSettings"));
-const Testimonials = lazyPage(() => import("../components/pages/content-modules/testimonials/testimonials"));
-const TicketDetails = lazyPage(() => import("../components/pages/support-modules/ticketDetails"));
-const TicketsList = lazyPage(() => import("../components/pages/support-modules/tickets"));
 const Timeline = lazyPage(() => import("../components/pages/pages-module/timeline"));
 const TransactionsList = lazyPage(() => import("../components/pages/finance-accounts-module/transactions"));
 const WorkingHoursSettings = lazyPage(() => import("../components/pages/settings-modules/clinic-settings/working-hours-settings/workingHoursSettings"));
@@ -331,18 +310,6 @@ export const adminRoutes: RouteObject[] = [
     element: <SystemUpdate />,
   },
   {
-    path: routes.rolesPermissions,
-    element: <RolesAndPermissions />,
-  },
-  {
-    path: routes.permissions,
-    element: <Permissions />,
-  },
-  {
-    path: routes.deleteaccountrequest,
-    element: <DeleteAccountRequest />,
-  },
-  {
     path: routes.incomeReport,
     element: <IncomeReport />,
   },
@@ -365,26 +332,6 @@ export const adminRoutes: RouteObject[] = [
   {
     path: routes.doctorScheduleClini,
     element: <DoctorSchedules />,
-  },
-  {
-    path: routes.contactMessages,
-    element: <ContactMessages />,
-  },
-  {
-    path: routes.tickets,
-    element: <TicketsList />,
-  },
-  {
-    path: routes.ticketDetails,
-    element: <TicketDetails />,
-  },
-  {
-    path: routes.announcements,
-    element: <AnnouncementsList />,
-  },
-  {
-    path: routes.newsletters,
-    element: <Newsletters />,
   },
   {
     path: routes.starter,
@@ -479,58 +426,6 @@ export const adminRoutes: RouteObject[] = [
     element: <TransactionsList />,
   },
   {
-    path: routes.pages,
-    element: <Pages />,
-  },
-  {
-    path: routes.addPage,
-    element: <AddPages />,
-  },
-  {
-    path: routes.editPage,
-    element: <EditPage />,
-  },
-  {
-    path: routes.addBlogs,
-    element: <AddBlog />,
-  },
-  {
-    path: routes.blogs,
-    element: <Blogs />,
-  },
-  {
-    path: routes.editBlogs,
-    element: <EditBlog />,
-  },
-  {
-    path: routes.blogCategories,
-    element: <BlogCategories />,
-  },
-  {
-    path: routes.blogComments,
-    element: <BlogComments />,
-  },
-  {
-    path: routes.countries,
-    element: <Countries />,
-  },
-  {
-    path: routes.states,
-    element: <States />,
-  },
-  {
-    path: routes.cities,
-    element: <Cities />,
-  },
-  {
-    path: routes.testimonials,
-    element: <Testimonials />,
-  },
-  {
-    path: routes.faq,
-    element: <Faq />,
-  },
-  {
     path: routes.pricing,
     element: <Pricing />,
   },
@@ -573,6 +468,10 @@ export const adminRoutes: RouteObject[] = [
   {
     path: routes.addInvoice,
     element: <AddInoivce />,
+  },
+  {
+    path: routes.editInvoice,
+    element: <EditInvoices />,
   },
   {
     path: routes.notifications,

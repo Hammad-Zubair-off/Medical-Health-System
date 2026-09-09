@@ -1,15 +1,67 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import PredefinedDatePicker from "../../../../../core/common/datePicker";
 import FilterIndex from "../../../../../core/common/filter/filterIndex";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
 import SearchInput from "../../../../../core/common/dataTable/dataTableSearch";
-import { LeavesListData } from "../../../../../core/json/leavesListData";
 import Datatable from "../../../../../core/common/dataTable";
 import LeavesModal from "./modal/leavesModal";
+import { useLeaves } from "../hooks/useLeaves";
+import { formatDate } from "../../../../../core/utils/display.utils";
+import { useAuth } from "../../../../../core/context/AuthContext";
+import { reviewLeave } from "../../../../../core/services/firestore/leave.service";
 
 const LeavesList = () => {
-  const data = LeavesListData;
+  const { user } = useAuth();
+  const { leaves, loading, error, refresh } = useLeaves();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState<string>("");
+
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+  };
+
+  const handleReview = async (
+    id: string,
+    status: "approved" | "rejected"
+  ) => {
+    setActionError(null);
+    setBusyId(id);
+    try {
+      await reviewLeave(id, status, user?.uid ?? null);
+      await refresh();
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : `Failed to ${status} leave`
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const data = useMemo(
+    () =>
+      leaves.map((l) => ({
+        key: l._id,
+        leaveId: l._id,
+        rawStatus: l.status,
+        ID: l.staffId.slice(0, 8) || l._id.slice(0, 8),
+        Employee: l.staffName || "—",
+        Image: "user-08.jpg",
+        LeaveType: l.leaveTypeName || "—",
+        Date: `${formatDate(l.from)} - ${formatDate(l.to)}`,
+        Day: `${String(l.days).padStart(2, "0")} Day${l.days === 1 ? "" : "s"}`,
+        AppliedOn: formatDate(l.created),
+        Status:
+          l.status === "approved"
+            ? "Approved"
+            : l.status === "rejected"
+              ? "Rejected"
+              : "Pending",
+      })),
+    [leaves]
+  );
   const columns = [
     {
       title: "ID",
@@ -81,43 +133,37 @@ const LeavesList = () => {
       sorter: (a: any, b: any) => a.Status.length - b.Status.length,
     },
     {
-      title: "",
-      render: () => (
-        <div className="action-item p-2">
-          <Link to="#" data-bs-toggle="dropdown">
-            <i className="ti ti-dots-vertical" />
-          </Link>
-          <ul className="dropdown-menu">
-            <li>
-              <Link
-                to="#"
-                className="dropdown-item d-flex align-items-center"
-                data-bs-toggle="modal"
-                data-bs-target="#edit_leave"
+      title: "Actions",
+      render: (_: unknown, record: { leaveId: string; rawStatus: string }) => (
+        <div className="d-flex align-items-center gap-1 flex-wrap">
+          {record.rawStatus === "pending" ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-sm btn-success"
+                data-testid={`leave-approve-${record.leaveId}`}
+                disabled={busyId === record.leaveId}
+                onClick={() => void handleReview(record.leaveId, "approved")}
               >
-                Edit
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="#"
-                className="dropdown-item d-flex align-items-center"
-                data-bs-toggle="modal"
-                data-bs-target="#delete_leave"
+                Approve
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                data-testid={`leave-reject-${record.leaveId}`}
+                disabled={busyId === record.leaveId}
+                onClick={() => void handleReview(record.leaveId, "rejected")}
               >
-                Delete
-              </Link>
-            </li>
-          </ul>
+                Reject
+              </button>
+            </>
+          ) : (
+            <span className="text-muted fs-13">—</span>
+          )}
         </div>
       ),
     },
   ];
-  const [searchText, setSearchText] = useState<string>("");
-
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-  };
 
   return (
     <>
@@ -344,6 +390,15 @@ const LeavesList = () => {
             </div>
           </div>
           <div className="table-responsive">
+            {error ? <div className="alert alert-danger">{error}</div> : null}
+            {actionError ? (
+              <div className="alert alert-danger" data-testid="leave-action-error">
+                {actionError}
+              </div>
+            ) : null}
+            {loading && data.length === 0 ? (
+              <p className="text-muted">Loading leaves…</p>
+            ) : null}
             <Datatable
               columns={columns}
               dataSource={data}

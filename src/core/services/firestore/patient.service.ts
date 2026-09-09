@@ -28,6 +28,42 @@ import type {
 const COLLECTION = "Patient";
 const DEFAULT_PAGE_SIZE = 20;
 
+function trimOrNull(value: string | undefined | null): string | null {
+  const t = (value ?? "").trim();
+  return t.length > 0 ? t : null;
+}
+
+function toVitals(values: PatientFormValues) {
+  const bloodPressure = trimOrNull(values.bloodPressure);
+  const heartRate = trimOrNull(values.heartRate);
+  const spo2 = trimOrNull(values.spo2);
+  const temperature = trimOrNull(values.temperature);
+  const respiratoryRate = trimOrNull(values.respiratoryRate);
+  const weight = trimOrNull(values.weight);
+
+  if (
+    !bloodPressure &&
+    !heartRate &&
+    !spo2 &&
+    !temperature &&
+    !respiratoryRate &&
+    !weight
+  ) {
+    return null;
+  }
+
+  return {
+    bloodPressure,
+    heartRate,
+    spo2,
+    temperature,
+    temperatureUnit: temperature ? values.temperatureUnit : null,
+    respiratoryRate,
+    weight,
+    weightUnit: weight ? values.weightUnit : null,
+  };
+}
+
 function toWriteData(values: PatientFormValues) {
   const displayName = `${values.firstName.trim()} ${values.lastName.trim()}`.trim();
   return {
@@ -48,6 +84,7 @@ function toWriteData(values: PatientFormValues) {
       country: values.country,
       postalCode: values.postalCode,
     },
+    vitals: toVitals(values),
   };
 }
 
@@ -142,6 +179,7 @@ export async function createPatient(
         userId,
         ...toWriteData(values),
         allergies: [],
+        // vitals come from toWriteData — null when not entered at create time
         lastVisit: null,
       },
       "create",
@@ -198,6 +236,7 @@ export async function createLinkedPatient(
         bloodGroup: null,
         address: null,
         allergies: [],
+        vitals: null,
         status: "active",
         primaryDoctorId: null,
         lastVisit: null,

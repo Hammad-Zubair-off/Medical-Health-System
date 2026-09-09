@@ -12,6 +12,18 @@ export interface PatientAddress {
   postalCode: string;
 }
 
+/** Optional clinical vitals — only present when staff records them. */
+export interface PatientVitals {
+  bloodPressure: string | null;
+  heartRate: string | null;
+  spo2: string | null;
+  temperature: string | null;
+  temperatureUnit: "C" | "F" | null;
+  respiratoryRate: string | null;
+  weight: string | null;
+  weightUnit: "kg" | "lb" | null;
+}
+
 /** `Patient/{id}` document shape. */
 export interface Patient {
   _id: string;
@@ -28,6 +40,7 @@ export interface Patient {
   bloodGroup: string | null;
   address: PatientAddress | null;
   allergies: string[];
+  vitals: PatientVitals | null;
   status: PatientStatus;
   primaryDoctorId: string | null;
   lastVisit: Timestamp | Date | null;
@@ -54,6 +67,19 @@ export interface PatientFormValues {
   state: string;
   city: string;
   postalCode: string;
+  /** Optional vitals — leave blank if not measured at registration. */
+  bloodPressure: string;
+  heartRate: string;
+  spo2: string;
+  temperature: string;
+  temperatureUnit: "C" | "F";
+  respiratoryRate: string;
+  weight: string;
+  weightUnit: "kg" | "lb";
+  /** Create a Firebase Auth login so the patient can sign in. */
+  createLogin: boolean;
+  password: string;
+  confirmPassword: string;
 }
 
 export interface ListPatientsParams {

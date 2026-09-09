@@ -45,6 +45,7 @@ export const appointmentDocSchema = z
       .nullable()
       .optional()
       .transform((v) => v ?? "physical"),
+    /** @deprecated Prefer FileObject.appointmentId attachments. Do not write new values. */
     appointmentfile: z.string().nullable().optional().transform((v) => v ?? null),
     cancel_reason: z.string().nullable().optional().transform((v) => v ?? null),
     description: z.string().nullable().optional().transform((v) => v ?? null),

@@ -1,16 +1,38 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import ImageWithBasePath from "../../../../core/imageWithBasePath";
 import SearchInput from "../../../../core/common/dataTable/dataTableSearch";
-import { PayrollListData } from "../../../../core/json/payrollListData";
 import { all_routes } from "../../../routes/all_routes";
 import Datatable from "../../../../core/common/dataTable";
 import PayrollListModal from "./modal/payrollListModal";
 import { Employee, StaffsRole, StatusActive } from "../../../../core/common/selectOption";
 import { DatePicker, Select } from "antd";
+import { usePayroll } from "./hooks/usePayroll";
+import { formatDate } from "../../../../core/utils/display.utils";
+import { formatMoney } from "../../../../core/utils/money.utils";
 
 const PayrollList = () => {
-  const data = PayrollListData;
+  const { payrolls, loading, error } = usePayroll();
+  const data = useMemo(
+    () =>
+      payrolls.map((p) => ({
+        key: p._id,
+        id: p._id,
+        Employee: p.staffName || "—",
+        Image: "user-08.jpg",
+        Email: "—",
+        JoiningDate: `${formatDate(p.periodStart)} – ${formatDate(p.periodEnd)}`,
+        Role: "—",
+        Salary: formatMoney(p.netPay),
+        Status:
+          p.status === "paid"
+            ? "Paid"
+            : p.status === "approved"
+              ? "Approved"
+              : "Generate Slip",
+      })),
+    [payrolls]
+  );
   const columns = [
     {
       title: "Employee",
@@ -134,7 +156,7 @@ const PayrollList = () => {
               <div className="d-flex align-items-center">
                 <h4 className="fw-bold mb-0 me-2">Payroll</h4>
                 <span className="badge badge-soft-primary border border-primary fw-medium">
-                  Total Department : 33
+                  Total Payroll : {loading ? "…" : data.length}
                 </span>
               </div>
               <Link
@@ -311,6 +333,7 @@ const PayrollList = () => {
               searchText={searchText}
             />
           </div>
+          {error ? <div className="alert alert-danger mt-2">{error}</div> : null}
         </div>
         {/* End Content */}
         {/* Footer Start */}

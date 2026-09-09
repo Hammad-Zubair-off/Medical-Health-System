@@ -1,22 +1,34 @@
-
+import { useMemo } from "react";
 import { Link } from "react-router";
-import { expenseCategoryData } from "../../../../../core/json/expenseCategoryData";
 import Datatable from "../../../../../core/common/dataTable";
 import ExpenseCategoryModal from "../modal/expenseCategoryModal";
+import { useExpenseCategories } from "../hooks/useExpenseCategories";
 
 const ExpenseCategory = () => {
-  const data = expenseCategoryData;
+  const { categories, loading, error } = useExpenseCategories();
+
+  const data = useMemo(
+    () =>
+      categories.map((c) => ({
+        key: c._id,
+        Category: c.name || "—",
+        Status: c.status === "active" ? "Active" : "Inactive",
+      })),
+    [categories]
+  );
+
   const columns = [
     {
       title: "Category",
       dataIndex: "Category",
-      render: (text: any) => <Link to="">{text}</Link>,
-      sorter: (a: any, b: any) => a.Category.length - b.Category.length,
+      render: (text: string) => <Link to="#">{text}</Link>,
+      sorter: (a: { Category: string }, b: { Category: string }) =>
+        a.Category.localeCompare(b.Category),
     },
     {
       title: "Status",
       dataIndex: "Status",
-      render: (text: any) => (
+      render: (text: string) => (
         <span
           className={`badge border ${
             text === "Active"
@@ -27,7 +39,8 @@ const ExpenseCategory = () => {
           {text}
         </span>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
+      sorter: (a: { Status: string }, b: { Status: string }) =>
+        a.Status.localeCompare(b.Status),
     },
     {
       title: "",
@@ -63,16 +76,10 @@ const ExpenseCategory = () => {
     },
   ];
 
-
   return (
     <>
-      {/* ========================
-			Start Page Content
-		========================= */}
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content">
-          {/* Start Page Header */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-2 pb-3 mb-3 border-1 border-bottom">
             <div className="flex-grow-1">
               <h4 className="fw-bold mb-0"> Expense Category </h4>
@@ -89,20 +96,24 @@ const ExpenseCategory = () => {
               </Link>
             </div>
           </div>
-          {/* End Page Header */}
-          {/*  Start Table */}
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
           <div className="table-responsive">
-            <Datatable
-              columns={columns}
-              dataSource={data}
-              Selection={false}
-              searchText={""}
-            />
+            {loading && data.length === 0 ? (
+              <p className="text-muted">Loading categories…</p>
+            ) : (
+              <Datatable
+                columns={columns}
+                dataSource={data}
+                Selection={false}
+                searchText={""}
+              />
+            )}
           </div>
-          {/*  End Table */}
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
         <div className="footer text-center bg-white p-2 border-top">
           <p className="text-dark mb-0">
             2025 ©{" "}
@@ -112,11 +123,7 @@ const ExpenseCategory = () => {
             , All Rights Reserved
           </p>
         </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
 
       <ExpenseCategoryModal />
     </>

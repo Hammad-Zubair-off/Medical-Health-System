@@ -7,6 +7,7 @@ import {
   type DoctorData,
   type DoctorProfileFormValues,
 } from "../../../../../../core/services/firestore/doctor.service";
+import { provisionLoginAccount } from "../../../../../../core/services/auth/auth.service";
 import { useAuth } from "../../../../../../core/context/AuthContext";
 
 export interface UseDoctorReturn {
@@ -55,17 +56,46 @@ export function useDoctor(id: string | undefined): UseDoctorReturn {
   return { doctor, loading, error, notFound, refresh: fetchDoctor };
 }
 
+export interface CreateDoctorWithLoginValues extends DoctorProfileFormValues {
+  uid: string;
+  password: string;
+  confirmPassword: string;
+}
+
 export function useDoctorForm() {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createDoctor = useCallback(
-    async (values: CreateDoctorFormValues) => {
+    async (values: CreateDoctorWithLoginValues) => {
       setSubmitting(true);
       setError(null);
       try {
-        return await createDoctorService(values, user?.uid);
+        let uid = values.uid.trim();
+        if (!uid) {
+          uid = await provisionLoginAccount({
+            email: values.email,
+            password: values.password,
+            displayName: values.displayName,
+            phoneNumber: values.phoneNumber || null,
+            role: "doctor",
+          });
+        }
+
+        const payload: CreateDoctorFormValues = {
+          displayName: values.displayName,
+          email: values.email,
+          phoneNumber: values.phoneNumber,
+          specializationId: values.specializationId,
+          qualifications: values.qualifications,
+          experienceYears: values.experienceYears,
+          consultationFee: values.consultationFee,
+          bio: values.bio,
+          status: values.status,
+          uid,
+        };
+        return await createDoctorService(payload, user?.uid);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to create doctor");
         throw err;

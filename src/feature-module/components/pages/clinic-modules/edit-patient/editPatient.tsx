@@ -34,6 +34,17 @@ const EditPatient = () => {
       state: patient.address?.state ?? "California",
       city: patient.address?.city ?? "Los Angeles",
       postalCode: patient.address?.postalCode ?? "",
+      bloodPressure: patient.vitals?.bloodPressure ?? "",
+      heartRate: patient.vitals?.heartRate ?? "",
+      spo2: patient.vitals?.spo2 ?? "",
+      temperature: patient.vitals?.temperature ?? "",
+      temperatureUnit: patient.vitals?.temperatureUnit ?? "F",
+      respiratoryRate: patient.vitals?.respiratoryRate ?? "",
+      weight: patient.vitals?.weight ?? "",
+      weightUnit: patient.vitals?.weightUnit ?? "kg",
+      createLogin: false,
+      password: "",
+      confirmPassword: "",
     };
   }, [patient]);
 

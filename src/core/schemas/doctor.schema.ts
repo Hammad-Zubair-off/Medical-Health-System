@@ -42,7 +42,44 @@ export const doctorFormSchema = z.object({
   consultationFee: z.number().min(0, "Fee cannot be negative"),
   bio: z.string(),
   status: z.enum(["active", "inactive"]),
+  /** Legacy Console UID paste — optional when password provisioning is used. */
   uid: z.string(),
+  password: z.string(),
+  confirmPassword: z.string(),
 });
 
 export type DoctorFormSchema = z.infer<typeof doctorFormSchema>;
+
+/** Create-doctor validation: password required (or a pre-existing Auth UID). */
+export const doctorCreateFormSchema = doctorFormSchema.superRefine((data, ctx) => {
+  const hasUid = data.uid.trim().length > 0;
+  const hasPassword = data.password.length > 0;
+
+  if (!hasUid && !hasPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Set a login password (or paste an existing Auth UID)",
+      path: ["password"],
+    });
+  }
+
+  if (hasPassword) {
+    if (data.password.length < 8) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Password must be at least 8 characters",
+        path: ["password"],
+      });
+    }
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+      });
+    }
+  }
+});
+
+/** Edit-doctor: password fields ignored. */
+export const doctorEditFormSchema = doctorFormSchema;

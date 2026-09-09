@@ -59,6 +59,7 @@ const convertFirestoreToAppointment = (
     AppointmentId: firestoreAppt.AppointmentId || "",
     Date_Time: formatDateTime(firestoreAppt.appointmentDate),
     Patient: patientName,
+    patientId: firestoreAppt.patientId || null,
     img: patientImage || undefined,
     phone_number: patientPhone,
     Mode: mode,

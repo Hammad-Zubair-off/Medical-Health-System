@@ -10,9 +10,20 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  runTransaction,
+} from "firebase/firestore";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+function formatInvoiceNumber(n: number): string {
+  return `INV-${String(n).padStart(4, "0")}`;
+}
 
 let testEnv: RulesTestEnvironment;
 
@@ -329,6 +340,350 @@ describe("Firestore rules", () => {
         setDoc(doc(asDoc, "Patient", "PNEW"), {
           userId: null,
           displayName: "Walk-in",
+          status: "active",
+        })
+      );
+    });
+  });
+
+  describe("Prescription collection", () => {
+    async function seedPrescriptions() {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, "Users", "admin1"), {
+          uid: "admin1",
+          role: "admin",
+        });
+        await setDoc(doc(db, "Users", "doc1"), {
+          uid: "doc1",
+          role: "doctor",
+        });
+        await setDoc(doc(db, "Users", "doc2"), {
+          uid: "doc2",
+          role: "doctor",
+        });
+        await setDoc(doc(db, "Users", "patientA"), {
+          uid: "patientA",
+          role: "patient",
+        });
+        await setDoc(doc(db, "Users", "patientB"), {
+          uid: "patientB",
+          role: "patient",
+        });
+        await setDoc(doc(db, "Prescription", "rxOwn"), {
+          prescriptionId: "PRE-001",
+          doctorUserId: "doc1",
+          patientUserId: "patientA",
+          patientId: "PA",
+          doctorId: "D1",
+          status: "active",
+          medicines: [],
+        });
+        await setDoc(doc(db, "Prescription", "rxOther"), {
+          prescriptionId: "PRE-002",
+          doctorUserId: "doc2",
+          patientUserId: "patientB",
+          patientId: "PB",
+          doctorId: "D2",
+          status: "active",
+          medicines: [],
+        });
+      });
+    }
+
+    it("doctor can read own prescription", async () => {
+      await seedPrescriptions();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertSucceeds(getDoc(doc(asDoc, "Prescription", "rxOwn")));
+    });
+
+    it("doctor cannot read another doctor's prescription", async () => {
+      await seedPrescriptions();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertFails(getDoc(doc(asDoc, "Prescription", "rxOther")));
+    });
+
+    it("patient can read own prescription", async () => {
+      await seedPrescriptions();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertSucceeds(getDoc(doc(asA, "Prescription", "rxOwn")));
+    });
+
+    it("patient cannot read another patient's prescription", async () => {
+      await seedPrescriptions();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertFails(getDoc(doc(asA, "Prescription", "rxOther")));
+    });
+
+    it("patient cannot create a prescription", async () => {
+      await seedPrescriptions();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertFails(
+        setDoc(doc(asA, "Prescription", "rxHack"), {
+          prescriptionId: "PRE-HACK",
+          doctorUserId: "doc1",
+          patientUserId: "patientA",
+          patientId: "PA",
+          doctorId: "D1",
+          status: "active",
+          medicines: [],
+        })
+      );
+    });
+
+    it("doctor can create own prescription", async () => {
+      await seedPrescriptions();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertSucceeds(
+        setDoc(doc(asDoc, "Prescription", "rxNew"), {
+          prescriptionId: "PRE-NEW",
+          doctorUserId: "doc1",
+          patientUserId: "patientA",
+          patientId: "PA",
+          doctorId: "D1",
+          status: "active",
+          medicines: [{ name: "Amox", dosage: "500mg", frequency: "1-0-1", duration: "7d" }],
+        })
+      );
+    });
+
+    it("signed-out cannot read prescriptions", async () => {
+      await seedPrescriptions();
+      const unauth = testEnv.unauthenticatedContext().firestore();
+      await assertFails(getDoc(doc(unauth, "Prescription", "rxOwn")));
+    });
+
+    it("nobody can delete a prescription", async () => {
+      await seedPrescriptions();
+      const asAdmin = testEnv.authenticatedContext("admin1").firestore();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertFails(deleteDoc(doc(asAdmin, "Prescription", "rxOwn")));
+      await assertFails(deleteDoc(doc(asDoc, "Prescription", "rxOwn")));
+    });
+  });
+
+  describe("Finance collections", () => {
+    async function seedFinance() {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, "Users", "admin1"), {
+          uid: "admin1",
+          role: "admin",
+        });
+        await setDoc(doc(db, "Users", "patientA"), {
+          uid: "patientA",
+          role: "patient",
+        });
+        await setDoc(doc(db, "Users", "patientB"), {
+          uid: "patientB",
+          role: "patient",
+        });
+        await setDoc(doc(db, "Users", "doc1"), {
+          uid: "doc1",
+          role: "doctor",
+        });
+        await setDoc(doc(db, "Invoice", "inv1"), {
+          invoiceNumber: "INV-0001",
+          patientId: "PA",
+          patientUserId: "patientA",
+          doctorUserId: "doc1",
+          total: 10000,
+          amountPaid: 0,
+          balance: 10000,
+          status: "sent",
+        });
+        await setDoc(doc(db, "Expense", "exp1"), {
+          title: "Supplies",
+          amount: 5000,
+          status: "active",
+        });
+        await setDoc(doc(db, "Counter", "invoice"), { next: 2 });
+      });
+    }
+
+    it("patient cannot write an invoice", async () => {
+      await seedFinance();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      await assertSucceeds(getDoc(doc(asA, "Invoice", "inv1")));
+      await assertFails(
+        updateDoc(doc(asA, "Invoice", "inv1"), {
+          amountPaid: 0,
+          status: "paid",
+        })
+      );
+      await assertFails(
+        setDoc(doc(asA, "Invoice", "hack"), {
+          invoiceNumber: "INV-9999",
+          patientUserId: "patientA",
+          doctorUserId: "doc1",
+          total: 1,
+          status: "paid",
+        })
+      );
+    });
+
+    it("patient cannot read another patient's invoice", async () => {
+      await seedFinance();
+      const asB = testEnv.authenticatedContext("patientB").firestore();
+      await assertFails(getDoc(doc(asB, "Invoice", "inv1")));
+    });
+
+    it("expenses are admin-only", async () => {
+      await seedFinance();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      const asAdmin = testEnv.authenticatedContext("admin1").firestore();
+      await assertFails(getDoc(doc(asA, "Expense", "exp1")));
+      await assertFails(getDoc(doc(asDoc, "Expense", "exp1")));
+      await assertSucceeds(getDoc(doc(asAdmin, "Expense", "exp1")));
+      await assertFails(
+        setDoc(doc(asA, "Expense", "exp2"), { title: "x", amount: 1 })
+      );
+    });
+
+    it("counter is admin-only", async () => {
+      await seedFinance();
+      const asA = testEnv.authenticatedContext("patientA").firestore();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      const asAdmin = testEnv.authenticatedContext("admin1").firestore();
+      await assertFails(getDoc(doc(asA, "Counter", "invoice")));
+      await assertFails(getDoc(doc(asDoc, "Counter", "invoice")));
+      await assertSucceeds(getDoc(doc(asAdmin, "Counter", "invoice")));
+      await assertFails(setDoc(doc(asA, "Counter", "invoice"), { next: 99 }));
+      await assertSucceeds(
+        updateDoc(doc(asAdmin, "Counter", "invoice"), { next: 3 })
+      );
+    });
+
+    it("concurrent invoice allocations never collide", async () => {
+      await seedFinance();
+      const asAdmin = testEnv.authenticatedContext("admin1").firestore();
+      const counterRef = doc(asAdmin, "Counter", "invoice");
+      await setDoc(counterRef, { next: 1 });
+
+      const allocate = () =>
+        runTransaction(asAdmin, async (tx) => {
+          const snap = await tx.get(counterRef);
+          const next = snap.exists()
+            ? Number((snap.data() as { next?: number }).next ?? 1)
+            : 1;
+          const safeNext =
+            Number.isFinite(next) && next > 0 ? Math.floor(next) : 1;
+          tx.set(counterRef, { next: safeNext + 1 }, { merge: true });
+          return formatInvoiceNumber(safeNext);
+        });
+
+      const numbers = await Promise.all(
+        Array.from({ length: 12 }, () => allocate())
+      );
+
+      expect(new Set(numbers).size).toBe(12);
+      expect(numbers).toEqual(
+        expect.arrayContaining([
+          "INV-0001",
+          "INV-0002",
+          "INV-0012",
+        ])
+      );
+      const final = await getDoc(counterRef);
+      expect(final.data()?.next).toBe(13);
+    });
+  });
+
+  describe("HRM collections", () => {
+    async function seedHrm() {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore();
+        await setDoc(doc(db, "Users", "admin1"), {
+          uid: "admin1",
+          role: "admin",
+        });
+        await setDoc(doc(db, "Users", "doc1"), {
+          uid: "doc1",
+          role: "doctor",
+        });
+        await setDoc(doc(db, "Users", "doc2"), {
+          uid: "doc2",
+          role: "doctor",
+        });
+        await setDoc(doc(db, "Payroll", "payOwn"), {
+          staffId: "STF1",
+          staffUserId: "doc1",
+          basicSalary: 100000,
+          netPay: 100000,
+          status: "draft",
+        });
+        await setDoc(doc(db, "Payroll", "payOther"), {
+          staffId: "STF2",
+          staffUserId: "doc2",
+          basicSalary: 200000,
+          netPay: 200000,
+          status: "draft",
+        });
+        await setDoc(doc(db, "Leave", "leave1"), {
+          staffId: "STF1",
+          staffUserId: "doc1",
+          leaveTypeId: "LT1",
+          status: "pending",
+          days: 1,
+        });
+        await setDoc(doc(db, "Staff", "STF1"), {
+          staffId: "STF-1",
+          userId: "doc1",
+          displayName: "Demo Doctor",
+          status: "active",
+        });
+      });
+    }
+
+    it("staff cannot read another's payroll", async () => {
+      await seedHrm();
+      const asDoc1 = testEnv.authenticatedContext("doc1").firestore();
+      await assertSucceeds(getDoc(doc(asDoc1, "Payroll", "payOwn")));
+      await assertFails(getDoc(doc(asDoc1, "Payroll", "payOther")));
+    });
+
+    it("staff cannot approve their own leave", async () => {
+      await seedHrm();
+      const asDoc1 = testEnv.authenticatedContext("doc1").firestore();
+      await assertFails(
+        updateDoc(doc(asDoc1, "Leave", "leave1"), { status: "approved" })
+      );
+      await assertFails(
+        setDoc(doc(asDoc1, "Leave", "leaveSelfApproved"), {
+          staffId: "STF1",
+          staffUserId: "doc1",
+          leaveTypeId: "LT1",
+          status: "approved",
+          days: 1,
+        })
+      );
+      await assertSucceeds(
+        setDoc(doc(asDoc1, "Leave", "leavePending"), {
+          staffId: "STF1",
+          staffUserId: "doc1",
+          leaveTypeId: "LT1",
+          status: "pending",
+          days: 1,
+        })
+      );
+      const asAdmin = testEnv.authenticatedContext("admin1").firestore();
+      await assertSucceeds(
+        updateDoc(doc(asAdmin, "Leave", "leave1"), { status: "approved" })
+      );
+    });
+
+    it("doctor cannot write Staff", async () => {
+      await seedHrm();
+      const asDoc = testEnv.authenticatedContext("doc1").firestore();
+      await assertSucceeds(getDoc(doc(asDoc, "Staff", "STF1")));
+      await assertFails(
+        updateDoc(doc(asDoc, "Staff", "STF1"), { displayName: "Hacked" })
+      );
+      await assertFails(
+        setDoc(doc(asDoc, "Staff", "STFHack"), {
+          staffId: "STF-X",
+          displayName: "Nope",
           status: "active",
         })
       );

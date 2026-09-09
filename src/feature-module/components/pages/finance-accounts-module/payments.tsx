@@ -1,26 +1,64 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import FilterIndex from "../../../../core/common/filter/filterIndex";
 import SearchInput from "../../../../core/common/dataTable/dataTableSearch";
-import { PaymentsListData } from "../../../../core/json/paymetsListData";
 import { all_routes } from "../../../routes/all_routes";
 import Datatable from "../../../../core/common/dataTable";
 import PaymentsModal from "./modal/paymentsModal";
 import ImageWithBasePath from "../../../../core/imageWithBasePath";
+import { usePayments } from "./hooks/usePayments";
+import { formatDate } from "../../../../core/utils/display.utils";
+import { formatMoney } from "../../../../core/utils/money.utils";
+
+const methodLabel = (method: string) => {
+  switch (method) {
+    case "bank-transfer":
+      return "Bank Transfer";
+    case "card":
+      return "Card";
+    case "cash":
+      return "Cash";
+    case "insurance":
+      return "Insurance";
+    default:
+      return method || "Other";
+  }
+};
 
 const PaymentsList = () => {
-  const data = PaymentsListData;
+  const { payments, loading, error, refresh } = usePayments({ status: "completed" });
+  const [searchText, setSearchText] = useState<string>("");
+
+  const data = useMemo(
+    () =>
+      payments.map((p) => ({
+        key: p._id,
+        InvoiceID: p.invoiceNumber || p.invoiceId,
+        Patient: p.patientName || "—",
+        Image: "user-01.jpg",
+        DoctorImage: "doctor-01.jpg",
+        Doctor: "—",
+        Position: "",
+        PaidDate: formatDate(p.paidOn),
+        Amount: formatMoney(p.amount),
+        PaymentMethod: methodLabel(p.method),
+        Status: p.status === "completed" ? "Paid" : "Cancelled",
+      })),
+    [payments]
+  );
+
   const columns = [
     {
       title: "Invoice ID",
       dataIndex: "InvoiceID",
-      render: (text: any) => <Link to="#">{text}</Link>,
-      sorter: (a: any, b: any) => a.InvoiceID.length - b.InvoiceID.length,
+      render: (text: string) => <Link to="#">{text}</Link>,
+      sorter: (a: { InvoiceID: string }, b: { InvoiceID: string }) =>
+        a.InvoiceID.localeCompare(b.InvoiceID),
     },
     {
       title: "Patient",
       dataIndex: "Patient",
-      render: (text: any, record: any) => (
+      render: (text: string, record: { Image: string }) => (
         <div className="d-flex align-items-center">
           <Link to="#" className="avatar avatar-md me-2">
             <ImageWithBasePath
@@ -34,12 +72,13 @@ const PaymentsList = () => {
           </Link>
         </div>
       ),
-      sorter: (a: any, b: any) => a.Patient.length - b.Patient.length,
+      sorter: (a: { Patient: string }, b: { Patient: string }) =>
+        a.Patient.localeCompare(b.Patient),
     },
     {
       title: "Doctor",
       dataIndex: "Doctor",
-      render: (text: any, record: any) => (
+      render: (text: string, record: { DoctorImage: string; Position: string }) => (
         <div className="d-flex align-items-center">
           <Link to={all_routes.doctordetails} className="avatar me-2">
             <ImageWithBasePath
@@ -56,33 +95,36 @@ const PaymentsList = () => {
           </div>
         </div>
       ),
-      sorter: (a: any, b: any) => a.Doctor.length - b.Doctor.length,
+      sorter: (a: { Doctor: string }, b: { Doctor: string }) =>
+        a.Doctor.localeCompare(b.Doctor),
     },
     {
       title: "PaidDate",
       dataIndex: "PaidDate",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) => a.PaidDate.length - b.PaidDate.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { PaidDate: string }, b: { PaidDate: string }) =>
+        a.PaidDate.localeCompare(b.PaidDate),
     },
     {
       title: "Amount",
       dataIndex: "Amount",
-      render: (text: any) => (
+      render: (text: string) => (
         <div className="fw-semibold text-dark">{text}</div>
       ),
-      sorter: (a: any, b: any) => a.Amount.length - b.Amount.length,
+      sorter: (a: { Amount: string }, b: { Amount: string }) =>
+        a.Amount.localeCompare(b.Amount),
     },
     {
       title: "Payment Method",
       dataIndex: "PaymentMethod",
-      render: (text: any) => <div className="text-dark"> {text} </div>,
-      sorter: (a: any, b: any) =>
-        a.PaymentMethod.length - b.PaymentMethod.length,
+      render: (text: string) => <div className="text-dark"> {text} </div>,
+      sorter: (a: { PaymentMethod: string }, b: { PaymentMethod: string }) =>
+        a.PaymentMethod.localeCompare(b.PaymentMethod),
     },
     {
       title: "Status",
       dataIndex: "Status",
-      render: (text: any) => (
+      render: (text: string) => (
         <span
           className={`badge border ${
             text === "Paid"
@@ -95,7 +137,8 @@ const PaymentsList = () => {
           {text}
         </span>
       ),
-      sorter: (a: any, b: any) => a.Status.length - b.Status.length,
+      sorter: (a: { Status: string }, b: { Status: string }) =>
+        a.Status.localeCompare(b.Status),
     },
     {
       title: "",
@@ -131,32 +174,25 @@ const PaymentsList = () => {
     },
   ];
 
-  const [searchText, setSearchText] = useState<string>("");
-
   const handleSearch = (value: string) => {
     setSearchText(value);
   };
+
   return (
     <>
-      {/* ========================
-			Start Page Content
-		========================= */}
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content">
-          {/* Start Page Header */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-2 pb-3 mb-3 border-1 border-bottom">
             <div className="flex-grow-1">
               <h4 className="fw-bold mb-0">
                 {" "}
                 Payments{" "}
                 <span className="badge badge-soft-primary fw-medium border py-1 px-2 border-primary fs-13 ms-1">
-                  Total Payments : 565
+                  Total Payments : {loading ? "…" : data.length}
                 </span>{" "}
               </h4>
             </div>
             <div className="text-end d-flex">
-              {/* dropdown*/}
               <div className="dropdown me-1">
                 <Link
                   to="#"
@@ -190,8 +226,11 @@ const PaymentsList = () => {
               </Link>
             </div>
           </div>
-          {/* End Page Header */}
-          {/*  Start Filter */}
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          ) : null}
           <div className=" d-flex align-items-center justify-content-between flex-wrap row-gap-3">
             <div className="d-flex align-items-center gap-2">
               <div className="search-set mb-3">
@@ -256,20 +295,19 @@ const PaymentsList = () => {
               </div>
             </div>
           </div>
-          {/*  End Filter */}
-          {/*  Start Table */}
           <div className="table-responsive">
-            <Datatable
-              columns={columns}
-              dataSource={data}
-              Selection={false}
-              searchText={searchText}
-            />
+            {loading && data.length === 0 ? (
+              <p className="text-muted">Loading payments…</p>
+            ) : (
+              <Datatable
+                columns={columns}
+                dataSource={data}
+                Selection={false}
+                searchText={searchText}
+              />
+            )}
           </div>
-          {/*  End Table */}
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
         <div className="footer text-center bg-white p-2 border-top">
           <p className="text-dark mb-0">
             2025 ©{" "}
@@ -279,13 +317,9 @@ const PaymentsList = () => {
             , All Rights Reserved
           </p>
         </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
 
-      <PaymentsModal />
+      <PaymentsModal onCreated={refresh} />
     </>
   );
 };

@@ -1,14 +1,26 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { DesignationData } from "../../../../core/json/designationData";
 import SearchInput from "../../../../core/common/dataTable/dataTableSearch";
 import Datatable from "../../../../core/common/dataTable";
 import DesignationModal from "./modal/designationModal";
 import { Designation, Status } from "../../../../core/common/selectOption";
 import { DatePicker, Select } from "antd";
+import { useDesignations } from "./hooks/useDepartments";
+import { formatDate } from "../../../../core/utils/display.utils";
 
 const DesignationList = () => {
-  const data = DesignationData;
+  const { designations, loading, error } = useDesignations();
+  const data = useMemo(
+    () =>
+      designations.map((d) => ({
+        key: d._id,
+        id: d._id,
+        Designation: d.name,
+        CreatedDate: formatDate(d.created),
+        Status: d.status === "active" ? "Active" : "Inactive",
+      })),
+    [designations]
+  );
   const columns = [
     {
       title: "Designation",
@@ -92,7 +104,7 @@ const DesignationList = () => {
               <h4 className="fw-bold mb-0">
                 Designation
                 <span className="badge badge-soft-primary border border-primary fs-13 fw-medium ms-2">
-                  Total Designation : 54
+                  Total Designation : {loading ? "…" : data.length}
                 </span>
               </h4>
             </div>
@@ -268,6 +280,7 @@ const DesignationList = () => {
             </div>
           </div>
           <div className="table-responsive">
+            {error ? <div className="alert alert-danger">{error}</div> : null}
             <Datatable
               columns={columns}
               dataSource={data}

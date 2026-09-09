@@ -21,6 +21,7 @@ const CreatePatient = () => {
               </h6>
             </div>
             <PatientForm
+              showLoginOption
               submitting={submitting}
               error={error}
               submitLabel="Add New Patient"

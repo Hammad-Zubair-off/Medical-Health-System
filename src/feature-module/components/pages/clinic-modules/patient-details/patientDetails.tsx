@@ -8,6 +8,40 @@ import Modals from "./modals/modals";
 import { usePatient } from "./hooks/usePatient";
 import { formatDate, formatFullAddress } from "../../../../../core/utils/display.utils";
 
+function formatBloodGroup(value: string | null | undefined): string {
+  if (!value) return "—";
+  return value.replace("+", " +ve").replace("-", " -ve");
+}
+
+function formatGenderLabel(value: string | null | undefined): string {
+  if (!value) return "—";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function VitalValue({
+  value,
+  unit,
+}: {
+  value: string | null | undefined;
+  unit?: string | null;
+}) {
+  if (!value) {
+    return (
+      <p className="mb-0 d-inline-flex align-items-center text-truncate text-muted">
+        <i className="ti ti-point-filled me-1 text-muted fs-18" />
+        Not recorded
+      </p>
+    );
+  }
+  return (
+    <p className="mb-0 d-inline-flex align-items-center text-truncate">
+      <i className="ti ti-point-filled me-1 text-primary fs-18" />
+      {value}
+      {unit ? ` ${unit}` : ""}
+    </p>
+  );
+}
+
 const PatientDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { patient, loading, error, notFound } = usePatient(id);
@@ -166,7 +200,7 @@ const PatientDetails = () => {
                         </span>
                         <div>
                           <h6 className="fs-13 fw-bold mb-1">DOB</h6>
-                          <p className="mb-0">25 Jan 1990</p>
+                          <p className="mb-0">{formatDate(patient.dateOfBirth)}</p>
                         </div>
                       </div>
                     </div>
@@ -177,7 +211,7 @@ const PatientDetails = () => {
                         </span>
                         <div>
                           <h6 className="fs-13 fw-bold mb-1">Blood Group</h6>
-                          <p className="mb-0">O +ve</p>
+                          <p className="mb-0">{formatBloodGroup(patient.bloodGroup)}</p>
                         </div>
                       </div>
                     </div>
@@ -188,7 +222,7 @@ const PatientDetails = () => {
                         </span>
                         <div>
                           <h6 className="fs-13 fw-bold mb-1">Gender</h6>
-                          <p className="mb-0">Male</p>
+                          <p className="mb-0">{formatGenderLabel(patient.gender)}</p>
                         </div>
                       </div>
                     </div>
@@ -199,7 +233,7 @@ const PatientDetails = () => {
                         </span>
                         <div>
                           <h6 className="fs-13 fw-bold mb-1">Email</h6>
-                          <p className="mb-0 text-break">alberto@example.com</p>
+                          <p className="mb-0 text-break">{patient.email ?? "—"}</p>
                         </div>
                       </div>
                     </div>
@@ -226,10 +260,10 @@ const PatientDetails = () => {
                           <h6 className="fs-13 fw-bold mb-1 text-truncate">
                             Blood Pressure
                           </h6>
-                          <p className="mb-0 d-inline-flex align-items-center text-truncate">
-                            <i className="ti ti-point-filled me-1 text-success fs-18" />
-                            100/67 mmHg
-                          </p>
+                          <VitalValue
+                            value={patient.vitals?.bloodPressure}
+                            unit={patient.vitals?.bloodPressure ? "mmHg" : null}
+                          />
                         </div>
                       </div>
                     </div>
@@ -242,10 +276,10 @@ const PatientDetails = () => {
                           <h6 className="fs-13 fw-bold mb-1 text-truncate">
                             Heart Rate
                           </h6>
-                          <p className="mb-0 d-inline-flex align-items-center text-truncate">
-                            <i className="ti ti-point-filled me-1 text-danger fs-18" />
-                            89 Bpm
-                          </p>
+                          <VitalValue
+                            value={patient.vitals?.heartRate}
+                            unit={patient.vitals?.heartRate ? "Bpm" : null}
+                          />
                         </div>
                       </div>
                     </div>
@@ -256,10 +290,10 @@ const PatientDetails = () => {
                         </span>
                         <div>
                           <h6 className="fs-13 fw-bold mb-1">SPO2</h6>
-                          <p className="mb-0 d-inline-flex align-items-center text-truncate">
-                            <i className="ti ti-point-filled me-1 text-success fs-18" />
-                            98 %
-                          </p>
+                          <VitalValue
+                            value={patient.vitals?.spo2}
+                            unit={patient.vitals?.spo2 ? "%" : null}
+                          />
                         </div>
                       </div>
                     </div>
@@ -272,10 +306,14 @@ const PatientDetails = () => {
                           <h6 className="fs-13 fw-bold mb-1 text-truncate">
                             Temperature
                           </h6>
-                          <p className="mb-0 d-inline-flex align-items-center text-truncate">
-                            <i className="ti ti-point-filled me-1 text-success fs-18" />
-                            101 C
-                          </p>
+                          <VitalValue
+                            value={patient.vitals?.temperature}
+                            unit={
+                              patient.vitals?.temperature
+                                ? patient.vitals.temperatureUnit ?? "F"
+                                : null
+                            }
+                          />
                         </div>
                       </div>
                     </div>
@@ -288,10 +326,10 @@ const PatientDetails = () => {
                           <h6 className="fs-13 fw-bold mb-1 text-truncate">
                             Respiratory Rate
                           </h6>
-                          <p className="mb-0 d-inline-flex align-items-center text-truncate">
-                            <i className="ti ti-point-filled me-1 text-danger fs-18" />
-                            24 rpm
-                          </p>
+                          <VitalValue
+                            value={patient.vitals?.respiratoryRate}
+                            unit={patient.vitals?.respiratoryRate ? "rpm" : null}
+                          />
                         </div>
                       </div>
                     </div>
@@ -304,10 +342,14 @@ const PatientDetails = () => {
                           <h6 className="fs-13 fw-bold mb-1 text-truncate">
                             Weight
                           </h6>
-                          <p className="mb-0 d-inline-flex align-items-center text-truncate">
-                            <i className="ti ti-point-filled me-1 text-success fs-18" />
-                            100 kg
-                          </p>
+                          <VitalValue
+                            value={patient.vitals?.weight}
+                            unit={
+                              patient.vitals?.weight
+                                ? patient.vitals.weightUnit ?? "kg"
+                                : null
+                            }
+                          />
                         </div>
                       </div>
                     </div>

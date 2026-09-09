@@ -9,6 +9,9 @@ import {
 import type { FirestoreAppointment } from "../../../../../core/types/appointment.types";
 import { toDate } from "../../../../../core/utils/firestore.utils";
 import type { Timestamp } from "firebase/firestore";
+import AppointmentAttachmentsPanel, {
+  refToUid,
+} from "../shared/AppointmentAttachmentsPanel";
 
 function formatDateTime(value: Timestamp | Date | undefined): string {
   const date = toDate(value as Timestamp | Date | null | undefined);
@@ -281,6 +284,15 @@ const AppointmentConsultations = () => {
               Complete Appointment
             </button>
           </div>
+
+          {id && appointment && (
+            <AppointmentAttachmentsPanel
+              appointmentId={id}
+              shareWithUid={refToUid(appointment.UserPatientID)}
+              patientId={appointment.patientId ?? null}
+              doctorId={refToUid(appointment.doctorId)}
+            />
+          )}
         </div>
 
         <div className="footer text-center bg-white p-2 border-top">

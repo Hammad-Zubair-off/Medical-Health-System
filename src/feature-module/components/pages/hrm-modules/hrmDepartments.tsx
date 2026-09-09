@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { HrmDepartmentsData } from "../../../../core/json/hrmDepartmentsData";
 import SearchInput from "../../../../core/common/dataTable/dataTableSearch";
 import Datatable from "../../../../core/common/dataTable";
 import HrmDepartmentsModal from "./modal/hrmDepartmentsModal";
 import { Department, StatusActive } from "../../../../core/common/selectOption";
 import { DatePicker, Select } from "antd";
+import { useDepartments } from "./hooks/useDepartments";
+import { formatDate } from "../../../../core/utils/display.utils";
 
 const HrmDepartments = () => {
-  const data = HrmDepartmentsData;
+  const { departments, loading, error } = useDepartments();
+  const data = useMemo(
+    () =>
+      departments.map((d) => ({
+        key: d._id,
+        id: d._id,
+        Department: d.name,
+        CreatedDate: formatDate(d.created),
+        NoofDoctor: "—",
+        Status: d.status === "active" ? "Active" : "Inactive",
+      })),
+    [departments]
+  );
   const columns = [
     {
       title: "Department",
@@ -97,7 +110,7 @@ const HrmDepartments = () => {
               <h4 className="fw-bold mb-0">
                 Department
                 <span className="badge badge-soft-primary border border-primary fs-13 fw-medium ms-2">
-                  Total Department : 33
+                  Total Department : {loading ? "…" : data.length}
                 </span>
               </h4>
             </div>
@@ -273,6 +286,7 @@ const HrmDepartments = () => {
             </div>
           </div>
           <div className="table-responsive">
+            {error ? <div className="alert alert-danger">{error}</div> : null}
             <Datatable
               columns={columns}
               dataSource={data}
