@@ -856,7 +856,7 @@ const Dashboard = () => {
                               <td>
                                 <div className="d-flex align-items-center">
                                   <Link
-                                    to={all_routes.patientDetails}
+                                    to={all_routes.patients}
                                     className="avatar me-2"
                                   >
                                     <ImageWithBasePath
@@ -868,7 +868,7 @@ const Dashboard = () => {
                                   <div>
                                     <h6 className="fs-14 mb-1">
                                       <Link
-                                        to={all_routes.patientDetails}
+                                        to={all_routes.patients}
                                         className="fw-medium"
                                       >
                                         {appointment.patient?.name || appointment.patientsName || "Unknown Patient"}
@@ -925,7 +925,7 @@ const Dashboard = () => {
                       <div key={patient.patientId} className={`d-flex justify-content-between align-items-center ${index < topPatients.length - 1 ? 'mb-3' : 'mb-0'}`}>
                         <div className="d-flex align-items-center">
                           <Link
-                            to={all_routes.patientDetails}
+                            to={all_routes.patients}
                             className="avatar me-2 flex-shrink-0"
                           >
                             <ImageWithBasePath
@@ -937,7 +937,7 @@ const Dashboard = () => {
                           <div>
                             <h6 className="fs-14 mb-1 text-truncate">
                               <Link
-                                to={all_routes.patientDetails}
+                                to={all_routes.patients}
                                 className="fw-medium"
                               >
                                 {patient.name}

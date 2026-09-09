@@ -278,17 +278,18 @@ a scheduled `stats/` document.
 
 ### 4.4 90% of the product is still fake data
 
-47 files in `src/core/json/` (e.g. `doctorsListData.tsx`, `patientListData.tsx`,
-`invoicesData.tsx`, `expensesListData.tsx`, `staffsListData.tsx`, `payrollListData.tsx`) are
-hard-coded arrays imported directly by 44 page components. Finance, HRM, Content/CMS, Support,
-Reports, Locations, Services, Specializations, Patients list, Doctors list — none are wired to
-Firestore. Forms across these modules (`addDoctor`, `createPatient`, `addBlog`, invoices, …)
-have no submit handlers, no validation beyond HTML5, and no persistence.
+**Update (Appointments):** Admin/clinic/patient appointment views now use Firestore.
+Remaining static JSON: **39 files** in `src/core/json/`, imported by **~37** page components
+(was 42 / 39 after Phase B). Finance, HRM, Content/CMS, Support, Reports, Prescriptions,
+Locations, and Services are still mockups.
 
-**Fix:** Prioritise by domain value (Patients → Appointments → Invoices → the rest). For each:
-define the Firestore schema + Zod type, write a `*.service.ts`, write a `use*.ts` hook mirroring
-the existing `useAppointments` pattern, replace the JSON import, add `react-hook-form` +
-resolver to the corresponding form. Delete the JSON file once migrated.
+**Update (Phase B):** Patients, Doctors, and Specializations read/write Firestore.
+
+The pattern to copy is documented in `docs/DATA_LAYER.md`.
+
+**Original note:** 47 files / 44 components were hard-coded arrays. Forms across remaining
+modules still have no submit handlers. Prioritise remaining domains (Prescriptions → Invoices →
+the rest).
 
 ---
 

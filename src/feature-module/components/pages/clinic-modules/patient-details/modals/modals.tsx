@@ -110,7 +110,7 @@ const Modals = () => {
               </div>
               <div>
                 <Link
-                  to={all_routes.appointmentconsultations}
+                  to={all_routes.appointments}
                   className="btn-primary btn btn-sm rounded d-flex align-items-center"
                 >
                   <i className="ti ti-video me-1" /> Start

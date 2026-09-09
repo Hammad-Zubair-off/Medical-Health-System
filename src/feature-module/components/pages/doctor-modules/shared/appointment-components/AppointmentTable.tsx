@@ -2,7 +2,10 @@ import { Link } from "react-router";
 import { useState } from "react";
 import Datatable from "../../../../../../core/common/dataTable/index";
 import StatusBadge from "./StatusBadge";
-import { all_routes } from "../../../../../routes/all_routes";
+import {
+  all_routes,
+  doctorsAppointmentDetailsPath,
+} from "../../../../../routes/all_routes";
 import type { Appointment } from "../appointment-types";
 
 // Re-export for backward compatibility
@@ -84,7 +87,7 @@ const PatientAvatar = ({
 const AppointmentTable = ({
   data,
   searchText,
-  onView,
+  onView: _onView,
 }: AppointmentTableProps) => {
   const columns = [
     {
@@ -131,14 +134,8 @@ const AppointmentTable = ({
       title: "",
       render: (_: unknown, record: Appointment) => (
         <Link
-          to="#"
+          to={doctorsAppointmentDetailsPath(record.id)}
           className="btn btn-sm btn-outline-primary"
-          onClick={(e) => {
-            e.preventDefault();
-            if (onView) {
-              onView(record);
-            }
-          }}
         >
           <i className="ti ti-eye me-1" />
           View

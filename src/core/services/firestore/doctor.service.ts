@@ -1,5 +1,24 @@
-import { doc, getDoc, collection, query, where, getDocs, Timestamp, updateDoc, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  Timestamp,
+  updateDoc,
+  serverTimestamp,
+  orderBy,
+  limit,
+  startAfter,
+  endAt,
+  startAt,
+  type QueryConstraint,
+} from "firebase/firestore";
 import { db, auth } from "../../../firebase";
+import { toLowerSearchField } from "../../utils/firestore.utils";
+import { withAudit } from "./_helpers";
 
 export interface DoctorTimeSlots {
   mondayStart?: Timestamp | Date;
@@ -34,13 +53,43 @@ export interface DoctorEnabledDays {
   sunday?: boolean;
 }
 
+export type DoctorStatus = "active" | "inactive";
+
 export interface DoctorData {
   _id?: string;
+  /** Legacy free-text specialization label. Prefer `specializationId` for new writes. */
   specialization?: string;
+  specializationId?: string;
+  displayName?: string;
+  displayNameLower?: string;
+  email?: string;
+  phoneNumber?: string;
+  photoUrl?: string;
+  qualifications?: string[];
+  experienceYears?: number;
+  consultationFee?: number;
+  bio?: string;
+  languages?: string[];
+  status?: DoctorStatus;
   time_slots?: DoctorTimeSlots;
   enabled_days?: DoctorEnabledDays;
   holidays?: DoctorHoliday[];
+  // Kept during migration so existing consumers of the (previously untyped)
+  // Doctor doc don't break. Tighten once every reader is on the typed fields.
   [key: string]: unknown;
+}
+
+export interface ListDoctorsParams {
+  search?: string;
+  specializationId?: string;
+  status?: DoctorStatus;
+  pageSize?: number;
+  cursor?: string | null;
+}
+
+export interface ListDoctorsResult {
+  doctors: DoctorData[];
+  nextCursor: string | null;
 }
 
 /**
@@ -329,5 +378,173 @@ export const updateDoctorSchedule = async (
     }
     throw error;
   }
+};
+
+/**
+ * List doctors with cursor pagination + prefix search. Never fetches the
+ * whole collection.
+ *
+ * NOTE: creating a *new* doctor (Auth user + Users/{uid} + Doctor/{id}) is
+ * intentionally not implemented here — it requires a product decision on
+ * account provisioning (Cloud Function vs. invite vs. manual console entry).
+ * See docs/DATA_LAYER.md and REMAINING.md.
+ */
+export const listDoctors = async (
+  params: ListDoctorsParams = {}
+): Promise<ListDoctorsResult> => {
+  const pageSize = params.pageSize ?? 20;
+  const ref = collection(db, "Doctor");
+  const constraints: QueryConstraint[] = [];
+
+  if (params.search) {
+    const term = toLowerSearchField(params.search);
+    constraints.push(
+      orderBy("displayNameLower"),
+      startAt(term),
+      endAt(term + "\uf8ff")
+    );
+  } else {
+    if (params.status) constraints.push(where("status", "==", params.status));
+    if (params.specializationId) {
+      constraints.push(where("specializationId", "==", params.specializationId));
+    }
+    constraints.push(orderBy("displayNameLower"));
+  }
+
+  if (params.cursor) {
+    const cursorSnap = await getDoc(doc(db, "Doctor", params.cursor));
+    if (cursorSnap.exists()) constraints.push(startAfter(cursorSnap));
+  }
+
+  constraints.push(limit(pageSize));
+
+  const snap = await getDocs(query(ref, ...constraints));
+  const doctors = snap.docs.map((d) => ({ _id: d.id, ...d.data() }) as DoctorData);
+  const nextCursor = snap.docs.length === pageSize ? snap.docs[snap.docs.length - 1].id : null;
+
+  return { doctors, nextCursor };
+};
+
+export interface DoctorProfileFormValues {
+  displayName: string;
+  email: string;
+  phoneNumber: string;
+  specializationId: string;
+  qualifications: string;
+  experienceYears: number;
+  consultationFee: number;
+  bio: string;
+  status: DoctorStatus;
+}
+
+/**
+ * Update an existing doctor's profile fields (not the linked Auth account or
+ * schedule — see `updateDoctorSchedule` for that).
+ */
+export const updateDoctor = async (
+  doctorId: string,
+  values: DoctorProfileFormValues,
+  actorUid?: string | null
+): Promise<void> => {
+  const ref = doc(db, "Doctor", doctorId);
+  await updateDoc(
+    ref,
+    withAudit(
+      {
+        displayName: values.displayName,
+        displayNameLower: toLowerSearchField(values.displayName),
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+        specializationId: values.specializationId,
+        qualifications: values.qualifications
+          ? values.qualifications.split(",").map((q) => q.trim()).filter(Boolean)
+          : [],
+        experienceYears: values.experienceYears,
+        consultationFee: values.consultationFee,
+        bio: values.bio,
+        status: values.status,
+      },
+      "update",
+      actorUid
+    )
+  );
+};
+
+export const setDoctorStatus = async (
+  doctorId: string,
+  status: DoctorStatus,
+  actorUid?: string | null
+): Promise<void> => {
+  const ref = doc(db, "Doctor", doctorId);
+  await updateDoc(ref, withAudit({ status }, "update", actorUid));
+};
+
+export interface CreateDoctorFormValues extends DoctorProfileFormValues {
+  /** Firebase Auth uid created in the Console (provisioning option c). */
+  uid: string;
+}
+
+/**
+ * Create a `Doctor/{id}` linked to an existing Auth/`Users` account.
+ *
+ * Does **not** create the Auth user — the client cannot mint another user's
+ * credentials. Admin creates the user in Firebase Console (or seed), pastes
+ * the uid here. See docs/DATA_LAYER.md (Step 3.4 option c).
+ */
+export const createDoctor = async (
+  values: CreateDoctorFormValues,
+  actorUid?: string | null
+): Promise<string> => {
+  if (!values.uid.trim()) {
+    throw new Error("A Firebase Auth UID is required. Create the user in Firebase Console first.");
+  }
+
+  const userRef = doc(db, "Users", values.uid.trim());
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    throw new Error("No Users profile exists for that UID. Create the Auth user and Users doc first.");
+  }
+
+  const existing = await getDocs(
+    query(collection(db, "Doctor"), where("userid", "==", userRef), limit(1))
+  );
+  if (!existing.empty) {
+    throw new Error("A doctor profile is already linked to that user.");
+  }
+
+  await updateDoc(userRef, { role: "doctor" });
+
+  const docRef = await addDoc(
+    collection(db, "Doctor"),
+    withAudit(
+      {
+        userid: userRef,
+        displayName: values.displayName,
+        displayNameLower: toLowerSearchField(values.displayName),
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+        specializationId: values.specializationId,
+        qualifications: values.qualifications
+          ? values.qualifications.split(",").map((q) => q.trim()).filter(Boolean)
+          : [],
+        experienceYears: values.experienceYears,
+        consultationFee: values.consultationFee,
+        bio: values.bio,
+        status: values.status,
+        enabled_days: {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: false,
+          sunday: false,
+        },
+      },
+      "create",
+      actorUid
+    )
+  );
+  return docRef.id;
 };
 

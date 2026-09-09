@@ -116,7 +116,9 @@ export const useAppointments = (): UseAppointmentsReturn => {
           );
         }
 
-        const firestoreData: Omit<FirestoreAppointment, "_id" | "doctorUserId" | "doctorId" | "created"> = {
+        const firestoreData: Omit<FirestoreAppointment, "_id" | "doctorUserId" | "doctorId" | "created"> & {
+          patientId?: string;
+        } = {
           AppointmentId: appointmentData.AppointmentId || "",
           appointmentDate: new Date(appointmentData.Date_Time),
           appointmentTime: new Date(appointmentData.Date_Time),
@@ -126,9 +128,13 @@ export const useAppointments = (): UseAppointmentsReturn => {
           patientsNumber: appointmentData.phone_number,
           status: (appointmentData.Status.toLowerCase() as FirestoreAppointment["status"]) || "pending",
           UserPatientID: "",
+          patientId: appointmentData._firestoreData?.patientId ?? undefined,
         };
 
-        const docId = await createAppointmentService(doctorUserId, doctorId, firestoreData);
+        const docId = await createAppointmentService(doctorUserId, doctorId, {
+          ...firestoreData,
+          patientId: firestoreData.patientId || undefined,
+        });
         
         const createdAppt = await getAppointmentByIdService(docId);
         if (createdAppt) {
