@@ -1,17 +1,50 @@
-import { Link } from "react-router";
+import { Link, Navigate, useParams } from "react-router";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
-import { all_routes } from "../../../../routes/all_routes";
+import { all_routes, editPatientPath } from "../../../../routes/all_routes";
 import { useState } from "react";
 import PredefinedDatePicker from "../../../../../core/common/datePicker";
 import SearchInput from "../../../../../core/common/dataTable/dataTableSearch";
 import Modals from "./modals/modals";
+import { usePatient } from "./hooks/usePatient";
+import { formatDate, formatFullAddress } from "../../../../../core/utils/display.utils";
 
 const PatientDetails = () => {
+  const { id } = useParams<{ id: string }>();
+  const { patient, loading, error, notFound } = usePatient(id);
   const [searchText, setSearchText] = useState<string>("");
 
   const handleSearch = (value: string) => {
     setSearchText(value);
   };
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <div className="content text-center py-5">
+          <div className="spinner-border text-primary" role="status" />
+          <p className="mt-3">Loading patient...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return <Navigate to={all_routes.error404} replace />;
+  }
+
+  if (error || !patient) {
+    return (
+      <div className="page-wrapper">
+        <div className="content">
+          <div className="alert alert-danger" role="alert">
+            {error ?? "You do not have access to this patient record."}
+          </div>
+          <Link to={all_routes.patients}>Back to patients</Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* ========================
@@ -51,24 +84,24 @@ const PatientDetails = () => {
                     />
                   </Link>
                   <div>
-                    <p className="text-primary mb-1">#PT0025</p>
+                    <p className="text-primary mb-1">#{patient.patientId || patient._id}</p>
                     <h5 className="mb-1">
                       <Link to="#" className="fw-bold">
-                        Alberto Ripley
+                        {patient.displayName}
                       </Link>
                     </h5>
-                    <p className="mb-3">4150 Hiney Road, Las Vegas, NV 89109</p>
+                    <p className="mb-3">{formatFullAddress(patient.address)}</p>
                     <div className="d-flex align-items-center flex-wrap">
                       <p className="mb-0 d-inline-flex align-items-center">
                         <i className="ti ti-phone me-1 text-dark" />
                         Phone :
-                        <span className="text-dark ms-1">+1 54546 45648</span>
+                        <span className="text-dark ms-1">{patient.phoneNumber ?? "—"}</span>
                       </p>
                       <span className="mx-2 text-light">|</span>
                       <p className="mb-0 d-inline-flex align-items-center">
                         <i className="ti ti-calendar-time me-1 text-dark" />
                         Last Visited :
-                        <span className="text-dark ms-1">30 Apr 2025</span>
+                        <span className="text-dark ms-1">{formatDate(patient.lastVisit)}</span>
                       </p>
                     </div>
                   </div>
@@ -96,6 +129,12 @@ const PatientDetails = () => {
                       <i className="ti ti-video" />
                     </Link>
                   </div>
+                  <Link
+                    to={editPatientPath(patient._id)}
+                    className="btn btn-outline-primary me-2"
+                  >
+                    Edit
+                  </Link>
                   <Link
                     to={all_routes.newAppointment}
                     className="btn btn-primary"

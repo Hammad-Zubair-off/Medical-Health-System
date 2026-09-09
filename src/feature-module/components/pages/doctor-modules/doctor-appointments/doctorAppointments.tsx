@@ -1,16 +1,13 @@
 import { Link } from "react-router";
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import AppointmentHeader from "../shared/appointment-components/AppointmentHeader";
 import AppointmentFilters from "../shared/appointment-components/AppointmentFilters";
 import AppointmentTable from "../shared/appointment-components/AppointmentTable";
 import { useAppointments } from "../shared/appointment-hooks/useAppointments";
 import Modal from "./modal/modals";
-import { all_routes } from "../../../../routes/all_routes";
 import type { Appointment } from "../shared/appointment-types";
 
 const DoctorAppointments = () => {
-  const navigate = useNavigate();
   const [searchText, setSearchText] = useState<string>("");
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isRescheduleMode, setIsRescheduleMode] = useState<boolean>(false);
@@ -78,8 +75,12 @@ const DoctorAppointments = () => {
   };
 
   const handleViewModeChange = (mode: "list" | "calendar") => {
+    // Calendar used to reuse the details route; details now require :id.
+    // Stay on the list page — calendar toggle is a no-op until a dedicated route exists.
     if (mode === "calendar") {
-      navigate(all_routes.doctorsappointmentdetails);
+      console.info(
+        "Doctor calendar view is not wired to a separate route; staying on list."
+      );
     }
   };
 

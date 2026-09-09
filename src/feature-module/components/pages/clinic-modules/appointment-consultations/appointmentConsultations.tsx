@@ -1,25 +1,120 @@
-import { Link } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
+import { useEffect, useState } from "react";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
 import { all_routes } from "../../../../routes/all_routes";
-import ComplaintForm from "../../../../../core/common/dynamic-list/complientForm";
-import DiagnosisForm from "../../../../../core/common/dynamic-list/diagnosisForm";
-import MedicalForm from "../../../../../core/common/dynamic-list/medicalForm";
-import AdviceForm from "../../../../../core/common/dynamic-list/AdviceForm";
-import InvestigationList from "../../../../../core/common/dynamic-list/InvestigationForm";
-import CommonSelect from "../../../../../core/common/common-select/commonSelect";
-import { empty_Stomach } from "../../../../../core/common/selectOption";
-import InvoiceList from "../../../../../core/common/dynamic-list/InvoiceList";
+import {
+  getAppointmentById,
+  updateAppointment,
+} from "../../../../../core/services/firestore/appointments.service";
+import type { FirestoreAppointment } from "../../../../../core/types/appointment.types";
+import { toDate } from "../../../../../core/utils/firestore.utils";
+import type { Timestamp } from "firebase/firestore";
+
+function formatDateTime(value: Timestamp | Date | undefined): string {
+  const date = toDate(value as Timestamp | Date | null | undefined);
+  if (!date) return "—";
+  return date.toLocaleString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 const AppointmentConsultations = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [appointment, setAppointment] = useState<FirestoreAppointment | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [complain, setComplain] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
+  const [description, setDescription] = useState("");
+
+  useEffect(() => {
+    if (!id) {
+      navigate(all_routes.error404, { replace: true });
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    void getAppointmentById(id)
+      .then((apt) => {
+        if (cancelled) return;
+        if (!apt) {
+          navigate(all_routes.error404, { replace: true });
+          return;
+        }
+        setAppointment(apt);
+        setComplain(apt.Complain ?? "");
+        setDiagnosis(apt.diagnosis ?? "");
+        setDescription(apt.description ?? "");
+        setError(null);
+      })
+      .catch((err) => {
+        console.error("Failed to load appointment", err);
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load appointment"
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate]);
+
+  const handleSave = async (complete?: boolean) => {
+    if (!id) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await updateAppointment(id, {
+        Complain: complain,
+        diagnosis,
+        description,
+        ...(complete ? { status: "completed" as const } : {}),
+      });
+      if (complete) {
+        navigate(all_routes.appointments);
+      }
+    } catch (err) {
+      console.error("Failed to save consultation", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to save consultation"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <div className="content text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!appointment) {
+    return null;
+  }
+
   return (
     <>
-      {/* ========================
-			Start Page Content
-		========================= */}
       <div className="page-wrapper">
-        {/* Start Content */}
         <div className="content">
-          {/* Start Page Header */}
           <div className="d-flex align-items-sm-center flex-sm-row flex-column gap-2 mb-4">
             <div className="flex-grow-1">
               <h6 className="fs-14 fw-semibold mb-0 d-flex align-items-center">
@@ -30,367 +125,164 @@ const AppointmentConsultations = () => {
               </h6>
             </div>
           </div>
-          {/* End Page Header */}
-          {/* Start Information */}
+
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
+
           <div className="card rounded-0">
             <div className="card-header">
               <h5 className="m-0 fw-bold"> Basic Information </h5>
             </div>
-            {/* end card header */}
             <div className="card-body">
-              {/* start row */}
               <div className="row align-items-center">
                 <div className="col-lg-6">
                   <div className="d-flex align-items-center gap-3">
                     <div className="avatar avatar-xxxl">
                       <ImageWithBasePath
                         src="assets/img/users/user-04.jpg"
-                        alt="user-01"
+                        alt="patient"
                         className="img-fluid img1 rounded"
                       />
                     </div>
-                    <div className="">
-                      <span className="badge badge-md text-info border border-info mb-1 fs-13 fw-medium px-2 ">
-                        #AP02254
+                    <div>
+                      <span className="badge badge-md text-info border border-info mb-1 fs-13 fw-medium px-2">
+                        #{appointment.AppointmentId || appointment._id}
                       </span>
-                      <h5 className="text-dark mb-1 fw-bold"> James Carter </h5>
+                      <h5 className="text-dark mb-1 fw-bold">
+                        {appointment.patientsName || "Unknown Patient"}
+                      </h5>
                       <p className="text-dark m-0">
-                        <span className="text-body"> Reason : </span> Pain near
-                        left chest, Pelvic salinity
+                        <span className="text-body"> Doctor : </span>
+                        {appointment.DoctorsName || "—"}
+                      </p>
+                      <p className="text-dark m-0">
+                        <span className="text-body"> Reason : </span>
+                        {appointment.Complain || "—"}
                       </p>
                     </div>
                   </div>
                 </div>
-                {/* end col */}
                 <div className="col-lg-6">
                   <div className="bg-light p-3 rounded d-flex align-items-center justify-content-between">
-                    {/* Items */}
                     <div>
                       <div className="mb-2">
-                        <h6 className="text-dark fs-14 fw-semibold mb-1">
-                          Age
-                        </h6>
-                        <p className="text-body fs-13 m-0"> 28 Years </p>
-                      </div>
-                      <div>
-                        <h6 className="text-dark fs-14 fw-semibold mb-1">
-                          Department
-                        </h6>
-                        <p className="text-body fs-13 m-0"> Cardiology </p>
-                      </div>
-                    </div>
-                    {/* Items */}
-                    <div>
-                      <div className="mb-2">
-                        <h6 className="text-dark fs-14 fw-semibold mb-1">
-                          Date
-                        </h6>
+                        <h6 className="text-dark fs-14 fw-semibold mb-1">Date</h6>
                         <p className="text-body fs-13 m-0">
-                          25 Jan 2024, 07:00
+                          {formatDateTime(
+                            appointment.appointmentDate as Timestamp | Date
+                          )}
                         </p>
                       </div>
                       <div>
                         <h6 className="text-dark fs-14 fw-semibold mb-1">
-                          Gender
+                          Status
                         </h6>
-                        <p className="text-body fs-13 m-0"> Male</p>
+                        <p className="text-body fs-13 m-0">
+                          {appointment.status}
+                        </p>
                       </div>
                     </div>
-                    {/* Items */}
                     <div>
                       <div className="mb-2">
                         <h6 className="text-dark fs-14 fw-semibold mb-1">
-                          Blood Group
+                          Phone
                         </h6>
-                        <p className="text-body fs-13 m-0"> O+ve</p>
+                        <p className="text-body fs-13 m-0">
+                          {appointment.patientsNumber || "—"}
+                        </p>
                       </div>
                       <div>
                         <h6 className="text-dark fs-14 fw-semibold mb-1">
                           Consultation Type
                         </h6>
                         <p className="text-body fs-13 m-0">
-                          Online Consultation
+                          {appointment.appointmentType === "video" ||
+                          appointment.isVideoCall
+                            ? "Online Consultation"
+                            : "In-Person"}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
-                {/* end col */}
               </div>
-              {/* end row */}
-            </div>
-            {/* end card body*/}
-          </div>
-          {/* end card */}
-          {/* End Information */}
-          {/* Start Vitals */}
-          <div className="card rounded-0">
-            <div className="card-header">
-              <h5 className="m-0 fw-bold"> Vitals </h5>
-            </div>
-            {/* end card header */}
-            <div className="card-body pb-0">
-              {/* start form */}
-              <form>
-                {/* start row */}
-                <div className="row">
-                  {/* Items */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Temperature
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        F
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  {/* Items */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Pulse
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        mmHg
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  {/* Items */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Respiratory Rate
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        rpm
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      SPO2
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        %
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Height
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        cm
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Weight
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        kg
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      BMI
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        %
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Waist
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        cm
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Weight
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control" />
-                      <span className="input-group-text bg-transparent text-dark fs-14">
-                        kg
-                      </span>
-                    </div>
-                  </div>
-                  {/* end col */}
-                </div>
-                {/* end row */}
-              </form>
-              {/* end form */}
             </div>
           </div>
-          {/* End Vitals */}
-          {/* Start Complaint */}
+
           <div className="card rounded-0">
             <div className="card-header">
               <h5 className="m-0 fw-bold"> Complaint </h5>
             </div>
-            {/* end card header */}
             <div className="card-body">
-              <ComplaintForm />
+              <textarea
+                className="form-control"
+                rows={3}
+                value={complain}
+                onChange={(e) => setComplain(e.target.value)}
+                placeholder="Patient complaint"
+              />
             </div>
-            {/* end card-body */}
           </div>
-          {/* end card-body */}
-          {/* End Vitals */}
-          {/* Start Diagnosis */}
+
           <div className="card rounded-0">
             <div className="card-header">
               <h5 className="m-0 fw-bold"> Diagnosis </h5>
             </div>
-            {/* end card header */}
-            <div className="card-body pb-0">
-              <div className="">
-                <DiagnosisForm />
-              </div>
-            </div>
-            {/* end card-body */}
-          </div>
-          {/* end card-body */}
-          {/* End Complaint */}
-          {/* Start Medication */}
-          <div className="card rounded-0">
-            <div className="card-header">
-              <h5 className="m-0 fw-bold"> Medications </h5>
-            </div>
-            {/* end card header */}
-            <div className="card-body pb-0">
-              <MedicalForm />
-            </div>
-            {/* end card-body */}
-          </div>
-          {/* end card-body */}
-          {/* End Medications */}
-          {/* Start Advice */}
-          <div className="card rounded-0">
-            <div className="card-header">
-              <h5 className="m-0 fw-bold"> Advice </h5>
-            </div>
-            {/* end card header */}
-            <div className="card-body advices-list pb-0">
-              <AdviceForm />
-            </div>
-            {/* end card body */}
-          </div>
-          {/* end card */}
-          {/* End Advice */}
-          {/* Start Investigation */}
-          <div className="card rounded-0">
-            <div className="card-header">
-              <h5 className="m-0 fw-bold"> Investigation &amp; Procedure </h5>
-            </div>
-            {/* end card header */}
-            <div className="card-body invest-list pb-0">
-              <InvestigationList />
-            </div>
-            {/* end card body */}
-          </div>
-          {/* end card */}
-          {/* End Advice */}
-          {/* Start Follow Up */}
-          <div className="card rounded-0">
-            <div className="card-header">
-              <h5 className="m-0 fw-bold"> Follow Up </h5>
-            </div>
-            {/* end card header */}
-            <div className="card-body pb-0">
-              {/* start row */}
-              <div className="row">
-                <div className="col-lg-6">
-                  <div className="mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Next Consultation
-                    </label>
-                    <div className="input-group">
-                      <input type="text" className="form-control rounded" />
-                    </div>
-                  </div>
-                </div>
-                {/* end col */}
-                <div className="col-lg-6">
-                  <div className="mb-3">
-                    <label className="form-label mb-1 text-dark fs-14 fw-medium">
-                      Whether to come on empty Stomach
-                    </label>
-                    <CommonSelect
-                      options={empty_Stomach}
-                      className="select"
-                      defaultValue={empty_Stomach[0]}
-                    />
-                  </div>
-                </div>
-                {/* end col */}
-              </div>
-              {/* end row */}
-            </div>
-            {/* end card body */}
-          </div>
-          {/* end card */}
-          {/* End Follow Up */}
-          {/* Start Invoice */}
-          <div className="card rounded-0">
-            <div className="card-header">
-              <h5 className="m-0 fw-bold"> Invoice </h5>
-            </div>
-            {/* end card header */}
             <div className="card-body">
-              <InvoiceList />
+              <textarea
+                className="form-control"
+                rows={3}
+                value={diagnosis}
+                onChange={(e) => setDiagnosis(e.target.value)}
+                placeholder="Diagnosis"
+              />
             </div>
-            {/* end card-body */}
           </div>
-          {/* end card-body */}
-          {/* End Complaint */}
+
+          <div className="card rounded-0">
+            <div className="card-header">
+              <h5 className="m-0 fw-bold"> Notes / Description </h5>
+            </div>
+            <div className="card-body">
+              <textarea
+                className="form-control"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Clinical notes"
+              />
+            </div>
+          </div>
+
           <div className="d-flex gap-2 align-items-center justify-content-end">
             <Link
-              to=""
+              to={all_routes.appointments}
               className="btn btn-md bg-light text-dark fs-13 fw-medium rounded"
             >
               Cancel
             </Link>
-            <Link
-              to=""
+            <button
+              type="button"
+              className="btn btn-md btn-outline-primary fs-13 fw-medium rounded"
+              disabled={saving}
+              onClick={() => void handleSave(false)}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
               className="btn btn-md btn-primary fs-13 fw-medium rounded"
-              data-bs-toggle="modal"
-              data-bs-target="#cancel-reason"
+              disabled={saving}
+              onClick={() => void handleSave(true)}
             >
               Complete Appointment
-            </Link>
+            </button>
           </div>
         </div>
-        {/* End Content */}
-        {/* Footer Start */}
+
         <div className="footer text-center bg-white p-2 border-top">
           <p className="text-dark mb-0">
             2025 ©
@@ -400,11 +292,7 @@ const AppointmentConsultations = () => {
             , All Rights Reserved
           </p>
         </div>
-        {/* Footer End */}
       </div>
-      {/* ========================
-			End Page Content
-		========================= */}
     </>
   );
 };

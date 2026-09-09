@@ -1,25 +1,27 @@
 import type { RouteObject } from "react-router";
-import Calendars from "../components/pages/application-modules/application/calendar/calendar";
-import CallHistory from "../components/pages/application-modules/application/calls/callHistory";
-import Chat from "../components/pages/application-modules/application/chat/chat";
-import Contacts from "../components/pages/application-modules/application/contacts/contacts";
-import Email from "../components/pages/application-modules/application/email/email";
-import FileManager from "../components/pages/application-modules/application/file-manager/fileManager";
-import IncomingCall from "../components/pages/application-modules/application/calls/incomingCall";
-import Invoice from "../components/pages/application-modules/application/invoice/invoice";
-import InvoiceDetails from "../components/pages/application-modules/invoice-details/invoiceDetails";
-import KanbanView from "../components/pages/application-modules/application/kanban-view/kanbanView";
-import Notes from "../components/pages/application-modules/application/notes/notes";
-import OutGoingCall from "../components/pages/application-modules/application/calls/outGoingCall";
-import SearchList from "../components/pages/application-modules/application/search-list/searchList";
-import SocialFeed from "../components/pages/application-modules/application/social-feed/socialFeed";
-import Todo from "../components/pages/application-modules/application/todo/todo";
-import TodoList from "../components/pages/application-modules/application/todo/todoList";
-import VideoCall from "../components/pages/application-modules/application/calls/videoCall";
-import VoiceCalls from "../components/pages/application-modules/application/calls/voiceCall";
+import { lazyPage } from "./lazyPage";
 import { all_routes } from "./all_routes";
 
 const routes = all_routes;
+
+const Calendars = lazyPage(() => import("../components/pages/application-modules/application/calendar/calendar"));
+const CallHistory = lazyPage(() => import("../components/pages/application-modules/application/calls/callHistory"));
+const Chat = lazyPage(() => import("../components/pages/application-modules/application/chat/chat"));
+const Contacts = lazyPage(() => import("../components/pages/application-modules/application/contacts/contacts"));
+const Email = lazyPage(() => import("../components/pages/application-modules/application/email/email"));
+const FileManager = lazyPage(() => import("../components/pages/application-modules/application/file-manager/fileManager"));
+const IncomingCall = lazyPage(() => import("../components/pages/application-modules/application/calls/incomingCall"));
+const Invoice = lazyPage(() => import("../components/pages/application-modules/application/invoice/invoice"));
+const InvoiceDetails = lazyPage(() => import("../components/pages/application-modules/invoice-details/invoiceDetails"));
+const KanbanView = lazyPage(() => import("../components/pages/application-modules/application/kanban-view/kanbanView"));
+const Notes = lazyPage(() => import("../components/pages/application-modules/application/notes/notes"));
+const OutGoingCall = lazyPage(() => import("../components/pages/application-modules/application/calls/outGoingCall"));
+const SearchList = lazyPage(() => import("../components/pages/application-modules/application/search-list/searchList"));
+const SocialFeed = lazyPage(() => import("../components/pages/application-modules/application/social-feed/socialFeed"));
+const Todo = lazyPage(() => import("../components/pages/application-modules/application/todo/todo"));
+const TodoList = lazyPage(() => import("../components/pages/application-modules/application/todo/todoList"));
+const VideoCall = lazyPage(() => import("../components/pages/application-modules/application/calls/videoCall"));
+const VoiceCalls = lazyPage(() => import("../components/pages/application-modules/application/calls/voiceCall"));
 
 export const sharedRoutes: RouteObject[] = [
   {

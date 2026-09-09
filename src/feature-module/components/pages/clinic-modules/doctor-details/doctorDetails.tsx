@@ -1,8 +1,50 @@
-import { Link } from "react-router";
-import { all_routes } from "../../../../routes/all_routes";
+import { Link, Navigate, useParams } from "react-router";
+import { all_routes, editDoctorsPath } from "../../../../routes/all_routes";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
+import { useDoctor } from "./hooks/useDoctor";
+import { listSpecializations } from "../../../../../core/services/firestore/specialization.service";
+import { useEffect, useState } from "react";
 
 const DoctorDetails = () => {
+  const { id } = useParams<{ id: string }>();
+  const { doctor, loading, error, notFound } = useDoctor(id);
+  const [specName, setSpecName] = useState<string>("");
+
+  useEffect(() => {
+    if (!doctor?.specializationId) {
+      setSpecName(doctor?.specialization ?? "");
+      return;
+    }
+    void listSpecializations(false).then((rows) => {
+      setSpecName(rows.find((s) => s._id === doctor.specializationId)?.name ?? doctor.specialization ?? "");
+    });
+  }, [doctor]);
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <div className="content text-center py-5">
+          <div className="spinner-border text-primary" role="status" />
+          <p className="mt-3">Loading doctor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return <Navigate to={all_routes.error404} replace />;
+  }
+
+  if (error || !doctor?._id) {
+    return (
+      <div className="page-wrapper">
+        <div className="content">
+          <div className="alert alert-danger">{error ?? "Doctor not found."}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* ========================
@@ -35,14 +77,14 @@ const DoctorDetails = () => {
                 </div>
                 <div className="flex-fill">
                   <div className="d-flex align-items-center mb-1">
-                    <h6 className="mb-0 fw-semibold">Dr. John Smith</h6>
+                    <h6 className="mb-0 fw-semibold">{doctor.displayName ?? "Doctor"}</h6>
                     <span className="badge border bg-white text-dark fw-medium ms-2">
                       <i className="ti ti-point-filled me-1 text-info" />
-                      Cardiology
+                      {specName || doctor.specialization || "—"}
                     </span>
                   </div>
                   <span className="d-block mb-3 fs-13">
-                    MBBS, M.D, Cardiology
+                    {(doctor.qualifications ?? []).join(", ") || "—"}
                   </span>
                   <div className="d-flex align-items-center">
                     <p className="mb-0 fs-13">
@@ -51,7 +93,7 @@ const DoctorDetails = () => {
                     </p>
                     <span className="badge badge-soft-success fw-medium ms-2">
                       <i className="ti ti-point-filled me-1 text-success" />
-                      Available
+                      {doctor.status === "inactive" ? "Unavailable" : "Available"}
                     </span>
                   </div>
                 </div>
@@ -59,9 +101,15 @@ const DoctorDetails = () => {
               <div>
                 <p className="mb-2">Consultation Charge</p>
                 <h6 className="fs-18 fw-bold mb-3">
-                  $499
+                  ${doctor.consultationFee ?? "—"}
                   <span className="fw-normal text-body fs-14"> / 30 Min</span>
                 </h6>
+                <Link
+                  to={editDoctorsPath(doctor._id)}
+                  className="btn btn-outline-primary mb-3 d-block"
+                >
+                  Edit doctor
+                </Link>
                 <Link
                   to={all_routes.appointmentCalendar}
                   className="btn btn-primary"
@@ -418,10 +466,7 @@ const DoctorDetails = () => {
                   <div className="card-body">
                     <h5 className="fw-bold mb-3">Short Bio</h5>
                     <p>
-                      Dr. John Smith has been practicing family medicine for
-                      over 10 years. She has extensive experience in managing
-                      chronic illnesses, preventive care, and treating a wide
-                      range of medical conditions for patients of all ages.
+                      {doctor.bio || "No bio on file yet."}
                     </p>
                     <div>
                       <div className="more-menu">
@@ -554,7 +599,7 @@ const DoctorDetails = () => {
                       </span>
                       <div>
                         <h6 className="fw-semibold fs-13 mb-1">Phone Number</h6>
-                        <p>+1 54546 45648</p>
+                        <p>{doctor.phoneNumber ?? "—"}</p>
                       </div>
                     </div>
                     <div className="d-flex align-items-center mb-3">
@@ -565,7 +610,7 @@ const DoctorDetails = () => {
                         <h6 className="fw-semibold fs-13 mb-1">
                           Email Address
                         </h6>
-                        <p>john@example.com</p>
+                        <p>{doctor.email ?? "—"}</p>
                       </div>
                     </div>
                     <div className="d-flex align-items-center mb-3">
@@ -603,7 +648,7 @@ const DoctorDetails = () => {
                         <h6 className="fw-semibold fs-13 mb-1">
                           Year of Experience
                         </h6>
-                        <p>15+ Years</p>
+                        <p>{doctor.experienceYears != null ? `${doctor.experienceYears}+ Years` : "—"}</p>
                       </div>
                     </div>
                     <div className="d-flex align-items-center">

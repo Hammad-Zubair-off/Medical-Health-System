@@ -14,6 +14,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../../../firebase";
 import { createUserProfile } from "../firestore/users.service";
+import { createLinkedPatient } from "../firestore/patient.service";
 import { mapAuthError } from "./auth-errors";
 
 function throwMapped(error: unknown): never {
@@ -54,6 +55,10 @@ export async function signUpPatient(
       phoneNumber,
       photoURL: user.photoURL,
     });
+
+    // Every patient needs a Patient/{id} doc so doctors/admin can read their
+    // clinical summary — doctors can't read another user's Users doc directly.
+    await createLinkedPatient(user.uid, { displayName, email, phoneNumber });
 
     await sendEmailVerification(user);
     return user;
