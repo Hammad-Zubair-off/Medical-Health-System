@@ -4,7 +4,7 @@ import Datatable from "../../../../../../core/common/dataTable/index";
 import StatusBadge from "./StatusBadge";
 import {
   doctorsAppointmentDetailsPath,
-  patientDetailsPath,
+  doctorPatientDetailsPath,
 } from "../../../../../routes/all_routes";
 import type { Appointment } from "../appointment-types";
 
@@ -95,7 +95,7 @@ const AppointmentTable = ({
       dataIndex: "Patient",
       render: (text: string, record: Appointment) => {
         const patientHref = record.patientId
-          ? patientDetailsPath(record.patientId)
+          ? doctorPatientDetailsPath(record.patientId)
           : doctorsAppointmentDetailsPath(record.id);
         return (
           <div className="d-flex align-items-center">

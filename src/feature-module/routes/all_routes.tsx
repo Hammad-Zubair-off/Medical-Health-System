@@ -30,6 +30,8 @@ export const all_routes = {
   patientnotificationssettings: "/patient/patient-notifications-settings",
   patientprescriptiondetails: "/patient/patient-prescription-details/:id",
   patientinvoicedetails: "/patient/patient-invoice-details/:id",
+  patientMessages: "/patient/messages",
+  patientMessagesThread: "/patient/messages/:appointmentId",
 
   //Doctor
   doctorschedule: "/doctor/doctor-schedule",
@@ -44,24 +46,22 @@ export const all_routes = {
   editPrescription: "/doctor/edit-prescription/:id",
   onlineconsultations: "/doctor/online-consultations",
   doctorsappointments: "/doctor/doctors-appointments",
-  doctorspatientdetails: "/doctor/doctors-patient-details",
+  doctorspatientdetails: "/doctor/patient-details/:id",
   doctorsappointmentdetails: "/doctor/doctors-appointment-details/:id",
   doctorsprescriptiondetails: "/doctor/doctors-prescription-details/:id",
+  doctorMessages: "/doctor/messages",
+  doctorMessagesThread: "/doctor/messages/:appointmentId",
 
   //Application routes
   chat: "/application/chat",
   calendar: "/application/calendar",
   notes: "/application/notes",
-  voiceCall: "/application/voice-call",
-  videoCall: "/application/video-call",
-  outgoingCall: "/application/outgoing-call",
-  incomingCall: "/application/incoming-call",
+  videoCall: "/application/video-call/:callId",
   callHistory: "/application/call-history",
   todo: "/application/todo",
   todoList: "/application/todo-list",
   email: "/application/email",
   EmailReply: "/application/email-reply",
-  audioCall: "/application/audio-call",
   fileManager: "/application/file-manager",
   fileManagerFolder: "/application/file-manager/folder/:folderId",
   socialFeed: "/application/social-feed",
@@ -104,6 +104,7 @@ export const all_routes = {
   assets: "/clinic-assets",
   activities: "/activities",
   messages: "/messages",
+  messagesThread: "/messages/:appointmentId",
   appointmentconsultations: "/appointment-consultations/:id",
 
   //HRM Pages
@@ -197,6 +198,10 @@ export function patientDetailsPath(id: string): string {
   return `/patient-details/${id}`;
 }
 
+export function doctorPatientDetailsPath(id: string): string {
+  return `/doctor/patient-details/${id}`;
+}
+
 export function editPatientPath(id: string): string {
   return `/edit-patient/${id}`;
 }
@@ -213,8 +218,28 @@ export function appointmentConsultationsPath(id: string): string {
   return `/appointment-consultations/${id}`;
 }
 
+export function doctorMessagesPath(appointmentId?: string): string {
+  return appointmentId
+    ? `/doctor/messages/${appointmentId}`
+    : "/doctor/messages";
+}
+
+export function patientMessagesPath(appointmentId?: string): string {
+  return appointmentId
+    ? `/patient/messages/${appointmentId}`
+    : "/patient/messages";
+}
+
+export function adminMessagesPath(appointmentId?: string): string {
+  return appointmentId ? `/messages/${appointmentId}` : "/messages";
+}
+
 export function doctorsAppointmentDetailsPath(id: string): string {
   return `/doctor/doctors-appointment-details/${id}`;
+}
+
+export function videoCallPath(callId: string): string {
+  return `/application/video-call/${callId}`;
 }
 
 export function patientAppointmentDetailsPath(id: string): string {

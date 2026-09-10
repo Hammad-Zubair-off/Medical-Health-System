@@ -19,6 +19,7 @@ const DoctorsProfileSettings = lazyPage(() => import("../components/pages/doctor
 const DoctorsReviews = lazyPage(() => import("../components/pages/doctor-modules/doctors-reviews/doctorsReviews"));
 const DoctorsLeaves = lazyPage(() => import("../components/pages/doctor-modules/doctors-leaves/doctorsLeaves"));
 const PatientDetails = lazyPage(() => import("../components/pages/clinic-modules/patient-details/patientDetails"));
+const DoctorMessages = lazyPage(() => import("../components/pages/doctor-modules/doctor-messages/doctorMessages"));
 
 export const doctorRoutes: RouteObject[] = [
   {
@@ -26,7 +27,7 @@ export const doctorRoutes: RouteObject[] = [
     element: <DoctorDahboard />,
   },
   {
-    path: routes.patientDetails,
+    path: routes.doctorspatientdetails,
     element: <PatientDetails />,
   },
   {
@@ -64,6 +65,14 @@ export const doctorRoutes: RouteObject[] = [
   {
     path: routes.doctorleaves,
     element: <DoctorsLeaves />,
+  },
+  {
+    path: routes.doctorMessages,
+    element: <DoctorMessages />,
+  },
+  {
+    path: routes.doctorMessagesThread,
+    element: <DoctorMessages />,
   },
   {
     path: routes.doctorreviews,

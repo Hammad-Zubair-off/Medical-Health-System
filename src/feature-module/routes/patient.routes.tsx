@@ -15,6 +15,7 @@ const PatientPasswordSettings = lazyPage(() => import("../components/pages/patie
 const PatientPrescriptionDetails = lazyPage(() => import("../components/pages/patient-modules/patient-prescription-details/patientPrescriptionDetails"));
 const PatientPrescriptions = lazyPage(() => import("../components/pages/patient-modules/patient-prescriptions/patientPrescriptions"));
 const PatientProfileSettings = lazyPage(() => import("../components/pages/patient-modules/patient-profile-settings/patientProfileSettings"));
+const PatientMessages = lazyPage(() => import("../components/pages/patient-modules/patient-messages/patientMessages"));
 
 export const patientRoutes: RouteObject[] = [
   {
@@ -28,6 +29,14 @@ export const patientRoutes: RouteObject[] = [
   {
     path: routes.patientappointmentdetails,
     element: <PatientAppointmentDetails />,
+  },
+  {
+    path: routes.patientMessages,
+    element: <PatientMessages />,
+  },
+  {
+    path: routes.patientMessagesThread,
+    element: <PatientMessages />,
   },
   {
     path: routes.patientdoctors,

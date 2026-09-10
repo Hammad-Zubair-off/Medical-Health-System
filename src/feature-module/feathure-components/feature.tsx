@@ -9,6 +9,7 @@ import Sidebarthree from "../../core/common/sidebarthree/sidebarthree";
 import GdprCookieBanner from "../../core/common/gdpr-cookie-banner/GdprCookieBanner";
 import { useAuth } from "../../core/context/AuthContext";
 import { getClinicSettings } from "../../core/services/firestore/clinic-settings.service";
+import IncomingCallModal from "../components/pages/application-modules/application/calls/components/IncomingCallModal";
 
 const Feature = () => {
   const { role } = useAuth();
@@ -87,6 +88,7 @@ const Feature = () => {
           <ThemeSettings />
           <Outlet />
           <GdprCookieBanner />
+          <IncomingCallModal />
         </div>
         <div
           className={`sidebar-overlay${mobileSidebar ? " opened" : ""}`}

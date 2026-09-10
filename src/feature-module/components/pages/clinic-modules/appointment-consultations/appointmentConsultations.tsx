@@ -1,17 +1,23 @@
 import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
-import { all_routes } from "../../../../routes/all_routes";
+import {
+  adminMessagesPath,
+  all_routes,
+} from "../../../../routes/all_routes";
+import { useAuth } from "../../../../../core/context/AuthContext";
 import {
   getAppointmentById,
   updateAppointment,
 } from "../../../../../core/services/firestore/appointments.service";
-import type { FirestoreAppointment } from "../../../../../core/types/appointment.types";
-import { toDate } from "../../../../../core/utils/firestore.utils";
-import type { Timestamp } from "firebase/firestore";
 import AppointmentAttachmentsPanel, {
   refToUid,
 } from "../shared/AppointmentAttachmentsPanel";
+import { ensureThreadForAppointment } from "../../../../../core/services/firestore/chat.service";
+import StartVideoCallButton from "../../application-modules/application/calls/components/StartVideoCallButton";
+import type { FirestoreAppointment } from "../../../../../core/types/appointment.types";
+import { toDate } from "../../../../../core/utils/firestore.utils";
+import type { Timestamp } from "firebase/firestore";
 
 function formatDateTime(value: Timestamp | Date | undefined): string {
   const date = toDate(value as Timestamp | Date | null | undefined);
@@ -28,11 +34,13 @@ function formatDateTime(value: Timestamp | Date | undefined): string {
 const AppointmentConsultations = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, role } = useAuth();
   const [appointment, setAppointment] = useState<FirestoreAppointment | null>(
     null
   );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [chatOpening, setChatOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [complain, setComplain] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
@@ -98,6 +106,25 @@ const AppointmentConsultations = () => {
     }
   };
 
+  const handleOpenChat = async () => {
+    if (!id || !user?.uid) return;
+    setChatOpening(true);
+    setError(null);
+    try {
+      // Admin is read-only — only open existing threads. Doctors may ensure.
+      if (role === "doctor") {
+        await ensureThreadForAppointment(id, user.uid);
+        navigate(`/doctor/messages/${id}`);
+      } else {
+        navigate(adminMessagesPath(id));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to open chat");
+    } finally {
+      setChatOpening(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="page-wrapper">
@@ -127,6 +154,25 @@ const AppointmentConsultations = () => {
                 </Link>
               </h6>
             </div>
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm"
+              data-testid="appointment-message-cta"
+              disabled={chatOpening || !user?.uid}
+              onClick={() => void handleOpenChat()}
+            >
+              <i className="ti ti-message me-1" />
+              {chatOpening ? "Opening…" : "Message"}
+            </button>
+            <StartVideoCallButton
+              appointmentId={id!}
+              className="btn btn-outline-success btn-sm"
+              isVideoAppointment={
+                appointment.appointmentType === "video" ||
+                !!appointment.isVideoCall
+              }
+              hasPatientLogin={!!refToUid(appointment.UserPatientID)}
+            />
           </div>
 
           {error && (

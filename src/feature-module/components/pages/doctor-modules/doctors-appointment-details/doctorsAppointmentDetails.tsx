@@ -1,7 +1,11 @@
 import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
 import ImageWithBasePath from "../../../../../core/imageWithBasePath";
-import { all_routes } from "../../../../routes/all_routes";
+import {
+  all_routes,
+  doctorMessagesPath,
+} from "../../../../routes/all_routes";
+import { useAuth } from "../../../../../core/context/AuthContext";
 import {
   getAppointmentById,
   updateAppointment,
@@ -12,6 +16,8 @@ import type { Timestamp } from "firebase/firestore";
 import AppointmentAttachmentsPanel, {
   refToUid,
 } from "../../clinic-modules/shared/AppointmentAttachmentsPanel";
+import StartVideoCallButton from "../../application-modules/application/calls/components/StartVideoCallButton";
+import AppointmentRecentCalls from "../../application-modules/application/calls/components/AppointmentRecentCalls";
 
 function formatDateTime(value: Timestamp | Date | undefined): string {
   const date = toDate(value as Timestamp | Date | null | undefined);
@@ -28,6 +34,7 @@ function formatDateTime(value: Timestamp | Date | undefined): string {
 const DoctorsAppointmentDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [appointment, setAppointment] = useState<FirestoreAppointment | null>(
     null
   );
@@ -92,6 +99,11 @@ const DoctorsAppointmentDetails = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleOpenChat = () => {
+    if (!id || !user?.uid) return;
+    navigate(doctorMessagesPath(id));
   };
 
   if (loading) {
@@ -205,6 +217,24 @@ const DoctorsAppointmentDetails = () => {
                 </Link>
                 <button
                   type="button"
+                  className="btn btn-outline-primary"
+                  data-testid="appointment-message-cta"
+                  disabled={!user?.uid}
+                  onClick={handleOpenChat}
+                >
+                  <i className="ti ti-message me-1" />
+                  Message
+                </button>
+                <StartVideoCallButton
+                  appointmentId={id!}
+                  isVideoAppointment={
+                    appointment.appointmentType === "video" ||
+                    !!appointment.isVideoCall
+                  }
+                  hasPatientLogin={!!refToUid(appointment.UserPatientID)}
+                />
+                <button
+                  type="button"
                   className="btn btn-primary"
                   disabled={saving}
                   onClick={() => void handleSave()}
@@ -216,12 +246,15 @@ const DoctorsAppointmentDetails = () => {
           </div>
 
           {id && appointment && (
-            <AppointmentAttachmentsPanel
-              appointmentId={id}
-              shareWithUid={refToUid(appointment.UserPatientID)}
-              patientId={appointment.patientId ?? null}
-              doctorId={refToUid(appointment.doctorId)}
-            />
+            <>
+              <AppointmentRecentCalls appointmentId={id} />
+              <AppointmentAttachmentsPanel
+                appointmentId={id}
+                shareWithUid={refToUid(appointment.UserPatientID)}
+                patientId={appointment.patientId ?? null}
+                doctorId={refToUid(appointment.doctorId)}
+              />
+            </>
           )}
         </div>
 

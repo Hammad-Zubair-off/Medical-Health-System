@@ -10,9 +10,11 @@
     "preview": "vite preview",
     "test:unit": "vitest run tests/unit",
     "test:rules": "vitest run tests/firestore/rules.test.ts",
+    "test:rules:calls": "vitest run tests/firestore/call.rules.test.ts",
     "test:e2e:flows": "node scripts/manual-qa-flows.mjs",
     "test:e2e:completion": "node scripts/manual-qa-completion.mjs",
     "test:e2e:appointments": "node scripts/manual-qa-appointments.mjs",
+    "test:e2e:chat": "node scripts/manual-qa-chat.mjs",
     "emulators": "firebase emulators:start --only firestore",
     "seed": "tsx scripts/seed.ts"
   },
