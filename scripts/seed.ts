@@ -1291,7 +1291,8 @@ async function main() {
     },
   ];
   for (const h of holidaySeeds) {
-    await ensureByField("Holiday", "name", h.name, {
+    await ensureByField("Holiday", "seedKey", h.seedKey, {
+      seedKey: h.seedKey,
       name: h.name,
       date: h.date,
       isRecurring: h.isRecurring,

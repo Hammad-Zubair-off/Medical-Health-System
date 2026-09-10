@@ -13,6 +13,7 @@ import {
 import { createAppointment } from "../../../../../core/services/firestore/appointments.service";
 import { listPatients } from "../../../../../core/services/firestore/patient.service";
 import {
+  isHoliday,
   listDoctors,
   type DoctorData,
 } from "../../../../../core/services/firestore/doctor.service";
@@ -138,12 +139,21 @@ const NewAppointment = () => {
 
       const datePart = dayjs(values.appointmentDate);
       const timePart = dayjs(values.appointmentTime, ["HH:mm", "HH:mm:ss"]);
+      if (!datePart.isValid() || !timePart.isValid()) {
+        throw new Error("Enter a valid appointment date and time");
+      }
       const appointmentDate = datePart
         .hour(timePart.hour())
         .minute(timePart.minute())
         .second(0)
         .millisecond(0)
         .toDate();
+
+      if (await isHoliday(doctorUserId, appointmentDate)) {
+        throw new Error(
+          "Cannot create appointment on a holiday. Please select a different date."
+        );
+      }
 
       const newId = await createAppointment({
         patientId: values.patientId,
@@ -198,7 +208,11 @@ const NewAppointment = () => {
                 }}
               >
                 {submitError && (
-                  <div className="alert alert-danger" role="alert">
+                  <div
+                    className="alert alert-danger"
+                    role="alert"
+                    data-testid="appointment-submit-error"
+                  >
                     {submitError}
                   </div>
                 )}
@@ -359,6 +373,20 @@ const NewAppointment = () => {
                                         d ? d.format("YYYY-MM-DD") : ""
                                       )
                                     }
+                                    onBlur={(e) => {
+                                      const raw = (e.target as HTMLInputElement)
+                                        .value;
+                                      const parsed = dayjs(
+                                        raw,
+                                        ["DD-MM-YYYY", "YYYY-MM-DD"],
+                                        true
+                                      );
+                                      if (parsed.isValid()) {
+                                        field.onChange(
+                                          parsed.format("YYYY-MM-DD")
+                                        );
+                                      }
+                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter") {
                                         e.preventDefault();
@@ -402,6 +430,18 @@ const NewAppointment = () => {
                                         t ? t.format("HH:mm") : ""
                                       )
                                     }
+                                    onBlur={(e) => {
+                                      const raw = (e.target as HTMLInputElement)
+                                        .value;
+                                      const parsed = dayjs(
+                                        raw,
+                                        ["HH:mm", "H:mm"],
+                                        true
+                                      );
+                                      if (parsed.isValid()) {
+                                        field.onChange(parsed.format("HH:mm"));
+                                      }
+                                    }}
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter") {
                                         e.preventDefault();

@@ -84,18 +84,32 @@ async function shot(page, name) {
 
 async function pickReactSelect(page, index, optionText) {
   const controls = page.locator(".react-select__control");
+  await controls.nth(index).waitFor({ state: "visible", timeout: 20000 });
   await controls.nth(index).click();
-  await page.waitForTimeout(400);
+  await page.waitForSelector(".react-select__menu .react-select__option", {
+    timeout: 15000,
+  });
+  await page.waitForTimeout(300);
   if (optionText) {
-    const opt = page.locator(".react-select__option", { hasText: optionText }).first();
-    if (await opt.count()) {
-      await opt.click();
+    const exact = page.locator(".react-select__option", {
+      hasText: new RegExp(`^${optionText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`),
+    });
+    if (await exact.count()) {
+      await exact.first().click();
+      await page.waitForTimeout(300);
+      return true;
+    }
+    const fuzzy = page.locator(".react-select__option", { hasText: optionText }).first();
+    if (await fuzzy.count()) {
+      await fuzzy.click();
+      await page.waitForTimeout(300);
       return true;
     }
   }
   const first = page.locator(".react-select__option").first();
   if (await first.count()) {
     await first.click();
+    await page.waitForTimeout(300);
     return true;
   }
   await page.keyboard.press("Escape");
@@ -107,9 +121,30 @@ async function setAntPicker(page, nth, value) {
   const input = page.locator(".ant-picker input").nth(nth);
   await input.waitFor({ state: "visible", timeout: 15000 });
   await input.click({ clickCount: 3 });
-  await input.fill(value);
-  await page.keyboard.press("Tab");
+  await page.keyboard.press("Backspace");
+  await input.type(value, { delay: 40 });
+  await page.waitForTimeout(300);
+  // Confirm via blur — do not press Enter (submits the surrounding form)
+  await page.locator("body").click({ position: { x: 8, y: 8 } });
   await page.waitForTimeout(400);
+}
+
+async function dismissOverlays(page) {
+  const gdpr = page.locator('[data-testid="gdpr-banner"] button');
+  if (await gdpr.count()) {
+    await gdpr.first().click({ timeout: 3000 }).catch(() => {});
+  }
+  await page.evaluate(() => {
+    document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("overflow");
+    document.body.style.removeProperty("padding-right");
+    document.querySelectorAll(".modal.show").forEach((m) => {
+      m.classList.remove("show");
+      m.style.display = "none";
+      m.setAttribute("aria-hidden", "true");
+    });
+  });
 }
 
 async function clickCreateAppointment(page) {
@@ -117,7 +152,6 @@ async function clickCreateAppointment(page) {
     '[data-testid="create-appointment-submit"], button[type="submit"]:has-text("Create Appointment")'
   );
   await btn.waitFor({ state: "visible", timeout: 15000 });
-  // Wait until not stuck in saving from a prior accidental submit
   for (let i = 0; i < 40; i++) {
     if (!(await btn.isDisabled())) break;
     await page.waitForTimeout(500);
@@ -338,6 +372,7 @@ async function main() {
       35
     );
     await page.waitForSelector('[data-testid="leaves-table"]', { timeout: 20000 });
+    await dismissOverlays(page);
 
     let approveBtn = page.locator('[data-testid^="leave-approve-"]').first();
     if ((await approveBtn.count()) === 0) {
@@ -360,6 +395,7 @@ async function main() {
 
       await page.click('[data-testid="leave-create-submit"]');
       await page.waitForTimeout(3000);
+      await dismissOverlays(page);
       await page.waitForSelector('[data-testid^="leave-approve-"]', {
         state: "visible",
         timeout: 25000,
@@ -368,7 +404,8 @@ async function main() {
     }
 
     await approveBtn.waitFor({ state: "visible", timeout: 15000 });
-    await approveBtn.click();
+    await approveBtn.scrollIntoViewIfNeeded();
+    await approveBtn.click({ force: true, timeout: 15000 });
     await page.waitForTimeout(4000);
     const after = await content(page);
     record(
@@ -384,6 +421,24 @@ async function main() {
   // ---- F5 Holiday blocks booking ----
   try {
     const hol = holidayDatePlus2();
+    const holidayName = `QA-HOL-${Date.now()}`;
+
+    await page.goto(BASE + "/holidays", { waitUntil: "domcontentloaded" });
+    await waitContent(page, (t) => /Holiday/i.test(t), 25);
+    await dismissOverlays(page);
+    await page.locator('a[data-bs-target="#add_holiday"]').click();
+    await page.waitForSelector('[data-testid="add-holiday-form"]', { timeout: 10000 });
+    await page.fill('[data-testid="holiday-name"]', holidayName);
+    const holPicker = page.locator("#add_holiday .ant-picker input").first();
+    await holPicker.click({ clickCount: 3 });
+    await page.keyboard.press("Backspace");
+    await holPicker.type(hol.display, { delay: 40 });
+    await page.locator('[data-testid="holiday-name"]').click();
+    await page.click('[data-testid="holiday-create-submit"]');
+    await page.waitForTimeout(3000);
+    await dismissOverlays(page);
+    await waitContent(page, (t) => t.includes(holidayName), 20);
+
     await page.goto(BASE + "/new-appointment", { waitUntil: "domcontentloaded" });
     await waitContent(
       page,
@@ -391,15 +446,8 @@ async function main() {
       35
     );
 
-    await page.locator(".react-select__control").nth(0).click();
-    await page.waitForTimeout(500);
-    await page.locator(".react-select__option", { hasText: /^Demo Patient$/ }).first().click();
-    await page.waitForTimeout(400);
-    await page.locator(".react-select__control").nth(1).click();
-    await page.waitForTimeout(500);
-    await page.locator(".react-select__option", { hasText: /Demo Doctor$/ }).first().click();
-    await page.waitForTimeout(400);
-
+    await pickReactSelect(page, 0, "Demo Patient");
+    await pickReactSelect(page, 1, "Demo Doctor");
     await setAntPicker(page, 0, hol.display);
     if (await page.locator(".ant-picker input").nth(1).count()) {
       await setAntPicker(page, 1, "10:00");
@@ -411,8 +459,14 @@ async function main() {
       (t) => /holiday|Cannot create appointment/i.test(t),
       25
     );
-    const blocked = /holiday|Cannot create appointment/i.test(errText);
-    record("F5 holiday-blocks-booking", blocked, errText.slice(0, 160));
+    const errVisible = await page
+      .locator('[data-testid="appointment-submit-error"]')
+      .innerText()
+      .catch(() => "");
+    const blocked =
+      /holiday|Cannot create appointment/i.test(errText) ||
+      /holiday|Cannot create appointment/i.test(errVisible);
+    record("F5 holiday-blocks-booking", blocked, (errVisible || errText).slice(0, 160));
     await shot(page, "F5-holiday-block");
   } catch (err) {
     record("F5 holiday-blocks-booking", false, String(err).slice(0, 180));
@@ -422,22 +476,34 @@ async function main() {
   try {
     const open = openDayPlus5();
     await page.goto(BASE + "/new-appointment", { waitUntil: "domcontentloaded" });
-    await waitContent(page, (t) => /Create Appointment|Patient/i.test(t), 25);
-    await pickReactSelect(page, 0, "Demo Patient");
-    await pickReactSelect(page, 1, "Demo Doctor");
+    await waitContent(
+      page,
+      (t) => /Create Appointment/i.test(t) && /Demo Patient/i.test(t),
+      35
+    );
+    const pickedPatient = await pickReactSelect(page, 0, "Demo Patient");
+    if (!pickedPatient) throw new Error("Failed to select Demo Patient");
+    const pickedDoctor = await pickReactSelect(page, 1, "Demo Doctor");
+    if (!pickedDoctor) throw new Error("Failed to select Demo Doctor");
     await setAntPicker(page, 0, open.display);
     if (await page.locator(".ant-picker input").nth(1).count()) {
-      await setAntPicker(page, 1, "11:00");
+      await setAntPicker(page, 1, "14:30");
     }
 
     await clickCreateAppointment(page);
-    await page.waitForTimeout(5000);
+    await page
+      .waitForURL(/appointment-consultations|consultation/i, { timeout: 25000 })
+      .catch(() => {});
+    await page.waitForTimeout(2000);
     const url = page.url();
     const text = await content(page);
+    const submitErr = await page
+      .locator('[data-testid="appointment-submit-error"]')
+      .innerText()
+      .catch(() => "");
     const created =
-      (/appointment-consultations|consultation/i.test(url) ||
-        /Demo Patient/i.test(text)) &&
-      !/Cannot create appointment on a holiday/i.test(text);
+      /appointment-consultations|consultation/i.test(url) &&
+      !/Cannot create appointment on a holiday/i.test(text + submitErr);
     await page.goto(BASE + "/appointments", { waitUntil: "domcontentloaded" });
     const list = await waitContent(
       page,
@@ -447,7 +513,7 @@ async function main() {
     record(
       "F6 book-open-day",
       created && /Demo Patient/i.test(list),
-      `${url} | ${list.slice(0, 100)}`
+      `${url} | ${submitErr || text.slice(0, 80)} | ${list.slice(0, 80)}`
     );
     await shot(page, "F6-appointments");
   } catch (err) {
