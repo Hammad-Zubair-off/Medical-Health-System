@@ -299,6 +299,133 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Appointment-scoped doctor–patient chat (admin read-only).
+    function chatAppointmentAllowsCreate(appointmentId) {
+      let appt = get(/databases/$(database)/documents/Appointment/$(appointmentId)).data;
+      return isSignedIn()
+        && (
+          (appt.keys().hasAny(["doctorUserId"])
+            && (appt.doctorUserId == userRef()
+                || appt.doctorUserId == request.auth.uid))
+          || (appt.keys().hasAny(["UserPatientID"])
+            && appt.UserPatientID != null
+            && (appt.UserPatientID == userRef()
+                || appt.UserPatientID == request.auth.uid))
+          || (appt.keys().hasAny(["patientId"])
+            && appt.patientId is string
+            && get(/databases/$(database)/documents/Patient/$(appt.patientId)).data.userId
+                == request.auth.uid)
+        );
+    }
+
+    function chatThreadParticipant() {
+      return isSignedIn()
+        && resource.data.keys().hasAny(["participantUids"])
+        && request.auth.uid in resource.data.participantUids;
+    }
+
+    match /ChatThread/{threadId} {
+      // Missing docs: allow signed-in get so clients can check existence before create.
+      // Existing docs: participants or admin only.
+      allow get: if isAdmin()
+        || (resource != null && chatThreadParticipant())
+        || (resource == null && isSignedIn());
+
+      allow list: if isAdmin()
+        || (resource != null && chatThreadParticipant());
+
+      allow create: if !isAdmin()
+        && chatAppointmentAllowsCreate(threadId)
+        && request.resource.data.appointmentId == threadId
+        && request.resource.data.doctorUserId is string
+        && request.resource.data.patientUserId is string
+        && request.resource.data.patientId is string
+        && request.auth.uid in request.resource.data.participantUids
+        && request.resource.data.participantUids.size() == 2
+        && (request.auth.uid == request.resource.data.doctorUserId
+            || request.auth.uid == request.resource.data.patientUserId);
+
+      // Participants may update preview / unread / audit fields after sending a message.
+      allow update: if chatThreadParticipant()
+        && request.resource.data.appointmentId == resource.data.appointmentId
+        && request.resource.data.doctorUserId == resource.data.doctorUserId
+        && request.resource.data.patientUserId == resource.data.patientUserId
+        && request.resource.data.patientId == resource.data.patientId
+        && request.resource.data.participantUids == resource.data.participantUids;
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isAdmin()
+          || (isSignedIn()
+              && request.auth.uid in get(/databases/$(database)/documents/ChatThread/$(threadId)).data.participantUids);
+
+        allow create: if isSignedIn()
+          && !isAdmin()
+          && request.auth.uid in get(/databases/$(database)/documents/ChatThread/$(threadId)).data.participantUids
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.senderRole in ["doctor", "patient"]
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
+
+        allow update: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/ChatThread/$(threadId)).data.participantUids
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["readBy"]);
+
+        allow delete: if false;
+      }
+    }
+
+    function callParticipant() {
+      return isSignedIn()
+        && resource.data.keys().hasAny(["participantUids"])
+        && request.auth.uid in resource.data.participantUids;
+    }
+
+    match /Call/{callId} {
+      // List queries must be constrained (e.g. participantUids array-contains).
+      // Also allow calleeUid / callerUid equality so ringing listeners can use either shape.
+      allow get: if isAdmin() || (resource != null && callParticipant());
+      allow list: if isAdmin()
+        || (resource != null && callParticipant())
+        || (resource != null
+            && resource.data.keys().hasAny(["calleeUid"])
+            && resource.data.calleeUid == request.auth.uid)
+        || (resource != null
+            && resource.data.keys().hasAny(["callerUid"])
+            && resource.data.callerUid == request.auth.uid);
+
+      // Only an appointment participant may start a call on it.
+      allow create: if !isAdmin()
+        && chatAppointmentAllowsCreate(request.resource.data.appointmentId)
+        && request.auth.uid == request.resource.data.callerUid
+        && request.auth.uid in request.resource.data.participantUids
+        && request.resource.data.participantUids.size() == 2
+        && request.resource.data.status == "ringing"
+        && request.resource.data.callType in ["video", "audio"];
+
+      // Participants exchange SDP and drive status. Identity fields are frozen.
+      allow update: if callParticipant()
+        && request.resource.data.appointmentId == resource.data.appointmentId
+        && request.resource.data.participantUids == resource.data.participantUids
+        && request.resource.data.callerUid == resource.data.callerUid
+        && request.resource.data.calleeUid == resource.data.calleeUid;
+
+      allow delete: if false;
+
+      match /callerCandidates/{candidateId} {
+        allow read, create: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/Call/$(callId)).data.participantUids;
+        allow update, delete: if false;
+      }
+      match /calleeCandidates/{candidateId} {
+        allow read, create: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/Call/$(callId)).data.participantUids;
+        allow update, delete: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

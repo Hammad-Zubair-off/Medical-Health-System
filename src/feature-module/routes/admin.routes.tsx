@@ -466,6 +466,10 @@ export const adminRoutes: RouteObject[] = [
     element: <Messages />,
   },
   {
+    path: routes.messagesThread,
+    element: <Messages />,
+  },
+  {
     path: routes.addInvoice,
     element: <AddInoivce />,
   },

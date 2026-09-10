@@ -84,22 +84,79 @@ async function shot(page, name) {
 
 async function pickReactSelect(page, index, optionText) {
   const controls = page.locator(".react-select__control");
+  await controls.nth(index).waitFor({ state: "visible", timeout: 20000 });
   await controls.nth(index).click();
-  await page.waitForTimeout(400);
+  await page.waitForSelector(".react-select__menu .react-select__option", {
+    timeout: 15000,
+  });
+  await page.waitForTimeout(300);
   if (optionText) {
-    const opt = page.locator(".react-select__option", { hasText: optionText }).first();
-    if (await opt.count()) {
-      await opt.click();
+    const exact = page.locator(".react-select__option", {
+      hasText: new RegExp(`^${optionText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`),
+    });
+    if (await exact.count()) {
+      await exact.first().click();
+      await page.waitForTimeout(300);
+      return true;
+    }
+    const fuzzy = page.locator(".react-select__option", { hasText: optionText }).first();
+    if (await fuzzy.count()) {
+      await fuzzy.click();
+      await page.waitForTimeout(300);
       return true;
     }
   }
   const first = page.locator(".react-select__option").first();
   if (await first.count()) {
     await first.click();
+    await page.waitForTimeout(300);
     return true;
   }
   await page.keyboard.press("Escape");
   return false;
+}
+
+/** Set Ant Date/Time picker without Enter (Enter can native-submit the form). */
+async function setAntPicker(page, nth, value) {
+  const input = page.locator(".ant-picker input").nth(nth);
+  await input.waitFor({ state: "visible", timeout: 15000 });
+  await input.click({ clickCount: 3 });
+  await page.keyboard.press("Backspace");
+  await input.type(value, { delay: 40 });
+  await page.waitForTimeout(300);
+  // Confirm via blur — do not press Enter (submits the surrounding form)
+  await page.locator("body").click({ position: { x: 8, y: 8 } });
+  await page.waitForTimeout(400);
+}
+
+async function dismissOverlays(page) {
+  const gdpr = page.locator('[data-testid="gdpr-banner"] button');
+  if (await gdpr.count()) {
+    await gdpr.first().click({ timeout: 3000 }).catch(() => {});
+  }
+  await page.evaluate(() => {
+    document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("overflow");
+    document.body.style.removeProperty("padding-right");
+    document.querySelectorAll(".modal.show").forEach((m) => {
+      m.classList.remove("show");
+      m.style.display = "none";
+      m.setAttribute("aria-hidden", "true");
+    });
+  });
+}
+
+async function clickCreateAppointment(page) {
+  const btn = page.locator(
+    '[data-testid="create-appointment-submit"], button[type="submit"]:has-text("Create Appointment")'
+  );
+  await btn.waitFor({ state: "visible", timeout: 15000 });
+  for (let i = 0; i < 40; i++) {
+    if (!(await btn.isDisabled())) break;
+    await page.waitForTimeout(500);
+  }
+  await btn.click({ timeout: 30000 });
 }
 
 function holidayDatePlus2() {
@@ -195,7 +252,6 @@ async function main() {
     await page.waitForSelector("#add_new_payment.show, #add_new_payment.modal", { timeout: 10000 });
     await page.waitForTimeout(1000);
 
-    // Bootstrap modal may need forced show
     await page.evaluate(() => {
       const el = document.getElementById("add_new_payment");
       if (el && !el.classList.contains("show")) {
@@ -206,21 +262,25 @@ async function main() {
     });
     await page.waitForSelector('[data-testid="payment-invoice"]', { timeout: 15000 });
 
+    // Wait until the invoice we created is listed (not just the select shell)
     const invSelect = page.locator('[data-testid="payment-invoice"]');
-    const optionCount = await invSelect.locator("option").count();
-    if (optionCount > 1) {
-      // Prefer the invoice we just created if listed
+    let selected = false;
+    for (let i = 0; i < 30; i++) {
       const labels = await invSelect.locator("option").allTextContents();
       const matchIdx = labels.findIndex(
-        (l) =>
-          (createdInvoiceNumber && l.includes(createdInvoiceNumber)) ||
-          /Demo Patient/i.test(l)
+        (l) => createdInvoiceNumber && l.includes(createdInvoiceNumber)
       );
       if (matchIdx > 0) {
         await invSelect.selectOption({ index: matchIdx });
-      } else {
-        await invSelect.selectOption({ index: 1 });
+        selected = true;
+        break;
       }
+      await page.waitForTimeout(500);
+    }
+    if (!selected) {
+      throw new Error(
+        `Invoice ${createdInvoiceNumber || "?"} not in payment select options`
+      );
     }
 
     await page.fill('[data-testid="payment-amount"]', "50");
@@ -230,40 +290,43 @@ async function main() {
     await page.click('[data-testid="payment-submit"]');
     await page.waitForTimeout(5000);
 
-    await page.goto(BASE + "/payments", { waitUntil: "domcontentloaded" });
-    const payText = await waitContent(
+    const successAlert = page.locator(".alert-success, .alert-danger");
+    const alertText = (await successAlert.first().innerText().catch(() => "")) || "";
+    if (/Failed|error|Select an invoice/i.test(alertText)) {
+      throw new Error(`Payment submit failed: ${alertText}`);
+    }
+
+    if (!createdInvoiceId) throw new Error("no invoice id from F1");
+    await page.goto(BASE + `/invoices-details/${createdInvoiceId}`, {
+      waitUntil: "domcontentloaded",
+    });
+    const invText = await waitContent(
       page,
       (t) =>
-        (t.includes(paymentMarker) || /\$50\.00|50\.00/.test(t)) &&
-        !/Loading payments/i.test(t),
+        /Amount Paid|Balance/i.test(t) &&
+        !/Loading/i.test(t) &&
+        (/\$50\.00|50\.00/.test(t) || /\$100\.00|100\.00/.test(t)),
       30
     );
-    const payOk =
-      !/Missing or insufficient|Failed to/i.test(payText) &&
-      (/Paid|Payment|\$50|50\.00/i.test(payText) || payText.includes(paymentMarker));
-    record("F2 record-payment", payOk, payText.slice(0, 140));
+    const balanceOk =
+      /Amount Paid\s*:\s*\$?50\.00/i.test(invText) ||
+      /Balance\s*:\s*\$?100\.00/i.test(invText) ||
+      /Partially Paid|partially-paid/i.test(invText);
+    record(
+      "F2 record-payment",
+      balanceOk,
+      invText.slice(0, 180)
+    );
+    record(
+      "F2 invoice-side-effects",
+      balanceOk && !/Amount Paid\s*:\s*\$?0\.00/i.test(invText),
+      invText.slice(0, 180)
+    );
+    await shot(page, "F2-invoice-after-pay");
     await shot(page, "F2-payments");
-
-    if (createdInvoiceId) {
-      await page.goto(BASE + `/invoices-details/${createdInvoiceId}`, {
-        waitUntil: "domcontentloaded",
-      });
-      const invText = await waitContent(
-        page,
-        (t) => /Balance|Paid|Amount/i.test(t) && !/Loading/i.test(t),
-        25
-      );
-      record(
-        "F2 invoice-side-effects",
-        /\$50|50\.00|Partially|Paid|Balance/i.test(invText),
-        invText.slice(0, 140)
-      );
-      await shot(page, "F2-invoice-after-pay");
-    } else {
-      record("F2 invoice-side-effects", null, "no invoice id from F1");
-    }
   } catch (err) {
     record("F2 record-payment", false, String(err).slice(0, 180));
+    record("F2 invoice-side-effects", false, String(err).slice(0, 120));
     await shot(page, "F2-fail");
   }
 
@@ -300,22 +363,54 @@ async function main() {
     record("F3 income-transactions", false, String(err).slice(0, 180));
   }
 
-  // ---- F4 Approve pending leave ----
+  // ---- F4 Create pending leave then approve ----
   try {
     await page.goto(BASE + "/leaves", { waitUntil: "domcontentloaded" });
     await waitContent(
       page,
-      (t) => /Leave|Pending|Approved/i.test(t) && !/Loading leaves/i.test(t),
-      30
+      (t) => /Admin Leaves/i.test(t) && !/Loading leaves/i.test(t),
+      35
     );
-    const approveBtn = page.locator('[data-testid^="leave-approve-"]').first();
+    await page.waitForSelector('[data-testid="leaves-table"]', { timeout: 20000 });
+    await dismissOverlays(page);
+
+    let approveBtn = page.locator('[data-testid^="leave-approve-"]').first();
+    if ((await approveBtn.count()) === 0) {
+      await page.locator('a[data-bs-target="#add_leave"]').click();
+      await page.waitForSelector('[data-testid="add-leave-form"]', { timeout: 10000 });
+      await page.waitForFunction(() => {
+        const sel = document.querySelector('[data-testid="leave-staff"]');
+        return sel && sel.options && sel.options.length > 1;
+      }, null, { timeout: 20000 });
+
+      const staffSelect = page.locator('[data-testid="leave-staff"]');
+      const typeSelect = page.locator('[data-testid="leave-type"]');
+      const staffValue = await staffSelect.locator("option").nth(1).getAttribute("value");
+      const typeValue = await typeSelect.locator("option").nth(1).getAttribute("value");
+      await staffSelect.selectOption(staffValue);
+      await typeSelect.selectOption(typeValue);
+
+      const reason = `QA-LEAVE-${Date.now()}`;
+      await page.fill('[data-testid="leave-reason"]', reason);
+
+      await page.click('[data-testid="leave-create-submit"]');
+      await page.waitForTimeout(3000);
+      await dismissOverlays(page);
+      await page.waitForSelector('[data-testid^="leave-approve-"]', {
+        state: "visible",
+        timeout: 25000,
+      });
+      approveBtn = page.locator('[data-testid^="leave-approve-"]').first();
+    }
+
     await approveBtn.waitFor({ state: "visible", timeout: 15000 });
-    await approveBtn.click();
+    await approveBtn.scrollIntoViewIfNeeded();
+    await approveBtn.click({ force: true, timeout: 15000 });
     await page.waitForTimeout(4000);
     const after = await content(page);
     record(
       "F4 approve-leave",
-      !/leave-action-error|Failed to/i.test(after),
+      !/leave-action-error|leave-create-error|Failed to/i.test(after),
       after.slice(0, 140)
     );
     await shot(page, "F4-leaves");
@@ -326,6 +421,24 @@ async function main() {
   // ---- F5 Holiday blocks booking ----
   try {
     const hol = holidayDatePlus2();
+    const holidayName = `QA-HOL-${Date.now()}`;
+
+    await page.goto(BASE + "/holidays", { waitUntil: "domcontentloaded" });
+    await waitContent(page, (t) => /Holiday/i.test(t), 25);
+    await dismissOverlays(page);
+    await page.locator('a[data-bs-target="#add_holiday"]').click();
+    await page.waitForSelector('[data-testid="add-holiday-form"]', { timeout: 10000 });
+    await page.fill('[data-testid="holiday-name"]', holidayName);
+    const holPicker = page.locator("#add_holiday .ant-picker input").first();
+    await holPicker.click({ clickCount: 3 });
+    await page.keyboard.press("Backspace");
+    await holPicker.type(hol.display, { delay: 40 });
+    await page.locator('[data-testid="holiday-name"]').click();
+    await page.click('[data-testid="holiday-create-submit"]');
+    await page.waitForTimeout(3000);
+    await dismissOverlays(page);
+    await waitContent(page, (t) => t.includes(holidayName), 20);
+
     await page.goto(BASE + "/new-appointment", { waitUntil: "domcontentloaded" });
     await waitContent(
       page,
@@ -333,40 +446,27 @@ async function main() {
       35
     );
 
-    // Patient select (first)
-    await page.locator(".react-select__control").nth(0).click();
-    await page.waitForTimeout(500);
-    await page.locator(".react-select__option", { hasText: /^Demo Patient$/ }).first().click();
-    await page.waitForTimeout(400);
-    // Doctor select (second)
-    await page.locator(".react-select__control").nth(1).click();
-    await page.waitForTimeout(500);
-    await page.locator(".react-select__option", { hasText: /Demo Doctor$/ }).first().click();
-    await page.waitForTimeout(400);
-
-    const dateInput = page.locator(".ant-picker input").first();
-    await dateInput.click({ clickCount: 3 });
-    await dateInput.fill(hol.display);
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(1000);
-
-    // TimePicker (antd) — second .ant-picker is often time
-    const timeInput = page.locator(".ant-picker input").nth(1);
-    if (await timeInput.count()) {
-      await timeInput.click();
-      await timeInput.fill("10:00");
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(400);
+    await pickReactSelect(page, 0, "Demo Patient");
+    await pickReactSelect(page, 1, "Demo Doctor");
+    await setAntPicker(page, 0, hol.display);
+    if (await page.locator(".ant-picker input").nth(1).count()) {
+      await setAntPicker(page, 1, "10:00");
     }
 
-    await page.click('button[type="submit"]:has-text("Create Appointment")');
+    await clickCreateAppointment(page);
     const errText = await waitContent(
       page,
       (t) => /holiday|Cannot create appointment/i.test(t),
-      20
+      25
     );
-    const blocked = /holiday|Cannot create appointment/i.test(errText);
-    record("F5 holiday-blocks-booking", blocked, errText.slice(0, 160));
+    const errVisible = await page
+      .locator('[data-testid="appointment-submit-error"]')
+      .innerText()
+      .catch(() => "");
+    const blocked =
+      /holiday|Cannot create appointment/i.test(errText) ||
+      /holiday|Cannot create appointment/i.test(errVisible);
+    record("F5 holiday-blocks-booking", blocked, (errVisible || errText).slice(0, 160));
     await shot(page, "F5-holiday-block");
   } catch (err) {
     record("F5 holiday-blocks-booking", false, String(err).slice(0, 180));
@@ -376,29 +476,34 @@ async function main() {
   try {
     const open = openDayPlus5();
     await page.goto(BASE + "/new-appointment", { waitUntil: "domcontentloaded" });
-    await waitContent(page, (t) => /Create Appointment|Patient/i.test(t), 25);
-    await pickReactSelect(page, 0, "Demo Patient");
-    await pickReactSelect(page, 1, "Demo Doctor");
-    const dateInput = page.locator(".ant-picker input").first();
-    await dateInput.click();
-    await dateInput.fill(open.display);
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(800);
-    const timeInput = page.locator(".ant-picker input").nth(1);
-    if (await timeInput.count()) {
-      await timeInput.click();
-      await timeInput.fill("11:00");
-      await page.keyboard.press("Enter");
+    await waitContent(
+      page,
+      (t) => /Create Appointment/i.test(t) && /Demo Patient/i.test(t),
+      35
+    );
+    const pickedPatient = await pickReactSelect(page, 0, "Demo Patient");
+    if (!pickedPatient) throw new Error("Failed to select Demo Patient");
+    const pickedDoctor = await pickReactSelect(page, 1, "Demo Doctor");
+    if (!pickedDoctor) throw new Error("Failed to select Demo Doctor");
+    await setAntPicker(page, 0, open.display);
+    if (await page.locator(".ant-picker input").nth(1).count()) {
+      await setAntPicker(page, 1, "14:30");
     }
 
-    await page.click('button[type="submit"]:has-text("Create Appointment")');
-    await page.waitForTimeout(5000);
+    await clickCreateAppointment(page);
+    await page
+      .waitForURL(/appointment-consultations|consultation/i, { timeout: 25000 })
+      .catch(() => {});
+    await page.waitForTimeout(2000);
     const url = page.url();
     const text = await content(page);
+    const submitErr = await page
+      .locator('[data-testid="appointment-submit-error"]')
+      .innerText()
+      .catch(() => "");
     const created =
-      /appointments|consultation|success|Demo Patient/i.test(url + " " + text) &&
-      !/Cannot create appointment on a holiday/i.test(text);
-    // Navigate to list to confirm
+      /appointment-consultations|consultation/i.test(url) &&
+      !/Cannot create appointment on a holiday/i.test(text + submitErr);
     await page.goto(BASE + "/appointments", { waitUntil: "domcontentloaded" });
     const list = await waitContent(
       page,
@@ -408,7 +513,7 @@ async function main() {
     record(
       "F6 book-open-day",
       created && /Demo Patient/i.test(list),
-      `${url} | ${list.slice(0, 100)}`
+      `${url} | ${submitErr || text.slice(0, 80)} | ${list.slice(0, 80)}`
     );
     await shot(page, "F6-appointments");
   } catch (err) {

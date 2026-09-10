@@ -250,7 +250,7 @@ async function main() {
     ["/expenses", "A7.expenses", /Expense/i],
     ["/leaves", "A8.leaves", /Leave/i],
     ["/staffs", "A9.staffs", /Staff/i],
-    ["/assets", "A10.assets", /Asset/i],
+    ["/clinic-assets", "A10.assets", /Asset/i],
     ["/locations", "A11.locations", /Location/i],
     ["/services", "A12.services", /Service/i],
     ["/application/file-manager", "A13.file-manager", /File Manager|My Files|Storage/i],

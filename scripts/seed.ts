@@ -783,6 +783,89 @@ async function main() {
     }
   }
 
+  // Appointment chat thread between demo doctor and demo patient (SEED-001)
+  let seededChatMessages = 0;
+  const demoDoctor = created.find((c) => c.email === "doctor@example.com");
+  const demoPatientAcct = created.find((c) => c.email === "patient@example.com");
+  const chatApptId = appointmentDocIds[0];
+  if (chatApptId && demoDoctor?.uid && demoPatientAcct?.uid) {
+    const threadRef = db.collection("ChatThread").doc(chatApptId);
+    const patientMeta = patientDocIds.find((p) => p.userId === demoPatientAcct.uid);
+    await threadRef.set(
+      {
+        appointmentId: chatApptId,
+        doctorUserId: demoDoctor.uid,
+        patientUserId: demoPatientAcct.uid,
+        patientId: patientMeta?.id ?? patientDocIds[0]?.id ?? "",
+        doctorName: "Demo Doctor",
+        patientName: "Demo Patient",
+        participantUids: [demoDoctor.uid, demoPatientAcct.uid],
+        lastMessage: "Looking forward to the visit.",
+        lastMessageAt: FieldValue.serverTimestamp(),
+        lastSenderUid: demoPatientAcct.uid,
+        unreadByUid: {
+          [demoDoctor.uid]: 1,
+          [demoPatientAcct.uid]: 0,
+        },
+        created: FieldValue.serverTimestamp(),
+        createdBy: "seed",
+        updated: FieldValue.serverTimestamp(),
+        updatedBy: "seed",
+      },
+      { merge: true }
+    );
+
+    const msgs = [
+      {
+        seedKey: "SEED-CHAT-MSG-1",
+        text: "Hello doctor, I have a follow-up question about my appointment.",
+        senderUid: demoPatientAcct.uid,
+        senderRole: "patient",
+      },
+      {
+        seedKey: "SEED-CHAT-MSG-2",
+        text: "Hi — happy to help. What would you like to know?",
+        senderUid: demoDoctor.uid,
+        senderRole: "doctor",
+      },
+      {
+        seedKey: "SEED-CHAT-MSG-3",
+        text: "Looking forward to the visit.",
+        senderUid: demoPatientAcct.uid,
+        senderRole: "patient",
+      },
+    ];
+    for (const m of msgs) {
+      const existingMsg = await threadRef
+        .collection("messages")
+        .where("seedKey", "==", m.seedKey)
+        .limit(1)
+        .get();
+      if (!existingMsg.empty) {
+        await existingMsg.docs[0].ref.set(
+          {
+            text: m.text,
+            senderUid: m.senderUid,
+            senderRole: m.senderRole,
+            readBy: [m.senderUid],
+            seedKey: m.seedKey,
+          },
+          { merge: true }
+        );
+      } else {
+        await threadRef.collection("messages").add({
+          text: m.text,
+          senderUid: m.senderUid,
+          senderRole: m.senderRole,
+          createdAt: FieldValue.serverTimestamp(),
+          readBy: [m.senderUid],
+          seedKey: m.seedKey,
+        });
+      }
+      seededChatMessages += 1;
+    }
+  }
+
   const medicineSets = [
     [
       {
@@ -1291,7 +1374,8 @@ async function main() {
     },
   ];
   for (const h of holidaySeeds) {
-    await ensureByField("Holiday", "name", h.name, {
+    await ensureByField("Holiday", "seedKey", h.seedKey, {
+      seedKey: h.seedKey,
       name: h.name,
       date: h.date,
       isRecurring: h.isRecurring,
@@ -1331,6 +1415,15 @@ async function main() {
       type: "Casual Leave",
       status: "pending" as const,
       daysAgo: 1,
+      days: 1,
+    },
+    // Always-pending leave for admin approve QA (reset to pending on every seed)
+    {
+      seedKey: "SEED-LV-QA-ALWAYS-PENDING",
+      staffIndex: 1,
+      type: "Sick Leave",
+      status: "pending" as const,
+      daysAgo: 0,
       days: 1,
     },
   ];
@@ -1532,6 +1625,7 @@ async function main() {
     linkedPatients: patientUids.length,
     walkIns: walkIns.length + 13,
     appointments: seededAppointments,
+    chatMessages: seededChatMessages,
     prescriptions: seededPrescriptions,
     expenseCategories: categoryIds.length,
     invoices: invoiceDocIds.length,

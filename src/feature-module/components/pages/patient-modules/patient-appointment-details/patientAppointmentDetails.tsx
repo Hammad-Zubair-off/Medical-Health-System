@@ -1,6 +1,9 @@
 import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
-import { all_routes } from "../../../../routes/all_routes";
+import {
+  all_routes,
+  patientMessagesPath,
+} from "../../../../routes/all_routes";
 import { useAuth } from "../../../../../core/context/AuthContext";
 import { getPatientByUserId } from "../../../../../core/services/firestore/patient.service";
 import {
@@ -13,6 +16,8 @@ import type { Timestamp } from "firebase/firestore";
 import AppointmentAttachmentsPanel, {
   refToUid,
 } from "../../clinic-modules/shared/AppointmentAttachmentsPanel";
+import StartVideoCallButton from "../../application-modules/application/calls/components/StartVideoCallButton";
+import AppointmentRecentCalls from "../../application-modules/application/calls/components/AppointmentRecentCalls";
 
 function formatDateTime(value: Timestamp | Date | undefined): string {
   const date = toDate(value as Timestamp | Date | null | undefined);
@@ -107,6 +112,11 @@ const PatientAppointmentDetails = () => {
     } finally {
       setCancelling(false);
     }
+  };
+
+  const handleOpenChat = () => {
+    if (!id || !user?.uid) return;
+    navigate(patientMessagesPath(id));
   };
 
   if (loading) {
@@ -224,6 +234,24 @@ const PatientAppointmentDetails = () => {
                 >
                   Back
                 </Link>
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  data-testid="appointment-message-cta"
+                  disabled={!user?.uid}
+                  onClick={handleOpenChat}
+                >
+                  <i className="ti ti-message me-1" />
+                  Message
+                </button>
+                <StartVideoCallButton
+                  appointmentId={id!}
+                  isVideoAppointment={
+                    appointment.appointmentType === "video" ||
+                    !!appointment.isVideoCall
+                  }
+                  hasPatientLogin={true}
+                />
                 {appointment.status !== "cancelled" &&
                   appointment.status !== "completed" && (
                     <button
@@ -240,12 +268,15 @@ const PatientAppointmentDetails = () => {
           </div>
 
           {id && (
-            <AppointmentAttachmentsPanel
-              appointmentId={id}
-              shareWithUid={refToUid(appointment.doctorUserId)}
-              patientId={appointment.patientId ?? null}
-              doctorId={refToUid(appointment.doctorId)}
-            />
+            <>
+              <AppointmentRecentCalls appointmentId={id} />
+              <AppointmentAttachmentsPanel
+                appointmentId={id}
+                shareWithUid={refToUid(appointment.doctorUserId)}
+                patientId={appointment.patientId ?? null}
+                doctorId={refToUid(appointment.doctorId)}
+              />
+            </>
           )}
         </div>
 

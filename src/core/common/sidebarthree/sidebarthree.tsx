@@ -5,10 +5,12 @@ import { all_routes } from "../../../feature-module/routes/all_routes";
 import { useDispatch, useSelector } from "react-redux";
 import { updateTheme } from "../../redux/themeSlice";
 import { setExpandMenu, setMobileSidebar } from "../../redux/sidebarSlice";
+import { useUnreadChatCount } from "../../hooks/useUnreadChatCount";
 
 const Sidebarthree = () => {
   const location = useLocation();
   const routes = all_routes;
+  const unreadMessages = useUnreadChatCount();
 
   // State for open submenus
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: string]: boolean }>({
@@ -146,6 +148,41 @@ const Sidebarthree = () => {
                     <Link to={routes.patientappointments}>
                       <i className="ti ti-calendar-check" />
                       <span>Appointments</span>
+                    </Link>
+                  </li>
+                  <li
+                    className={
+                      isActive(routes.patientMessages) ||
+                      location.pathname.startsWith("/patient/messages/")
+                        ? "active"
+                        : ""
+                    }
+                  >
+                    <Link to={routes.patientMessages}>
+                      <i className="ti ti-messages" />
+                      <span>Messages</span>
+                      {unreadMessages > 0 ? (
+                        <span
+                          className="count"
+                          data-testid="sidebar-messages-unread"
+                          style={{
+                            marginLeft: "auto",
+                            minWidth: 18,
+                            height: 18,
+                            padding: "0 5px",
+                            borderRadius: 9,
+                            background: "#EF1E1E",
+                            fontSize: 10,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#fff",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {unreadMessages > 99 ? "99+" : unreadMessages}
+                        </span>
+                      ) : null}
                     </Link>
                   </li>
                   <li

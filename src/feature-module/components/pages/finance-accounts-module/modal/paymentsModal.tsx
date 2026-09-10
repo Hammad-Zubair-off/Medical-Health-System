@@ -39,6 +39,7 @@ const PaymentsModal = ({ onCreated }: PaymentsModalProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [invoicesLoaded, setInvoicesLoaded] = useState(false);
   const [enabledFlags, setEnabledFlags] = useState<Record<string, boolean> | null>(
     null
   );
@@ -63,11 +64,13 @@ const PaymentsModal = ({ onCreated }: PaymentsModalProps) => {
               patientName: inv.patientName,
             }))
         );
+        setInvoicesLoaded(true);
       } catch (err) {
         if (!cancelled) {
           setError(
             err instanceof Error ? err.message : "Failed to load invoices"
           );
+          setInvoicesLoaded(true);
         }
       }
     })();
@@ -201,7 +204,13 @@ const PaymentsModal = ({ onCreated }: PaymentsModalProps) => {
                       }}
                       required
                     >
-                      <option value="">Select invoice</option>
+                      <option value="">
+                        {invoicesLoaded
+                          ? invoices.length
+                            ? "Select invoice"
+                            : "No unpaid invoices"
+                          : "Loading invoices…"}
+                      </option>
                       {invoices.map((inv) => (
                         <option key={inv.id} value={inv.id}>
                           {inv.label}
@@ -298,7 +307,7 @@ const PaymentsModal = ({ onCreated }: PaymentsModalProps) => {
                   type="submit"
                   className="btn btn-primary btn-sm"
                   data-testid="payment-submit"
-                  disabled={submitting}
+                  disabled={submitting || !invoicesLoaded || invoices.length === 0}
                 >
                   {submitting ? "Saving…" : "Add New Payment"}
                 </button>

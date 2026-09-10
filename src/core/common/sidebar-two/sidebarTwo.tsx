@@ -5,9 +5,11 @@ import  { useState, useEffect } from "react";
 import { updateTheme } from "../../redux/themeSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { setExpandMenu, setMobileSidebar } from "../../redux/sidebarSlice";
+import { useUnreadChatCount } from "../../hooks/useUnreadChatCount";
 
 const SidebarTwo = () => {
   const location = useLocation();
+  const unreadMessages = useUnreadChatCount();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -186,6 +188,41 @@ const SidebarTwo = () => {
                         </Link>
                       </li>
                     </ul>
+                  </li>
+                  <li
+                    className={
+                      isActive(all_routes.doctorMessages) ||
+                      location.pathname.startsWith("/doctor/messages/")
+                        ? "active"
+                        : ""
+                    }
+                  >
+                    <Link to={all_routes.doctorMessages}>
+                      <i className="ti ti-messages" />
+                      <span>Messages</span>
+                      {unreadMessages > 0 ? (
+                        <span
+                          className="count"
+                          data-testid="sidebar-messages-unread"
+                          style={{
+                            marginLeft: "auto",
+                            minWidth: 18,
+                            height: 18,
+                            padding: "0 5px",
+                            borderRadius: 9,
+                            background: "#EF1E1E",
+                            fontSize: 10,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#fff",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {unreadMessages > 99 ? "99+" : unreadMessages}
+                        </span>
+                      ) : null}
+                    </Link>
                   </li>
                   <li
                     className={

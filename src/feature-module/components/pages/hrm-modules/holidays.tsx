@@ -17,7 +17,7 @@ const DAY_NAMES = [
 ];
 
 const HolidaysList = () => {
-  const { holidays, loading, error } = useHolidays();
+  const { holidays, loading, error, refresh } = useHolidays();
   const data = useMemo(
     () =>
       holidays.map((h) => {
@@ -133,7 +133,7 @@ const HolidaysList = () => {
 			End Page Content
 		========================= */}
 
-      <HolidaysModal />
+      <HolidaysModal onCreated={() => void refresh()} />
     </>
   );
 };
