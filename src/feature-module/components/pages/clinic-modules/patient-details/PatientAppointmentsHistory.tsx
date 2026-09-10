@@ -211,8 +211,11 @@ const PatientAppointmentsHistory = ({
                 </td>
               </tr>
             ) : (
-              visible.map((appt) => (
-                <tr key={appt._id} data-testid={`patient-appt-row-${appt._id}`}>
+              visible.map((appt) => {
+                const apptId = appt._id ?? "";
+                if (!apptId) return null;
+                return (
+                <tr key={apptId} data-testid={`patient-appt-row-${apptId}`}>
                   <td>{formatDateTime(appt.appointmentDate)}</td>
                   {!doctorScoped ? (
                     <td className="fw-semibold">{appt.DoctorsName || "—"}</td>
@@ -225,14 +228,15 @@ const PatientAppointmentsHistory = ({
                   </td>
                   <td className="text-end">
                     <Link
-                      to={detailPath(appt._id)}
+                      to={detailPath(apptId)}
                       className="btn btn-sm btn-outline-primary"
                     >
                       View
                     </Link>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

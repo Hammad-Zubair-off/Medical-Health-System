@@ -14,6 +14,7 @@ import {
   updateDoc,
   where,
   type DocumentReference,
+  type QueryConstraint,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../../../firebase";
@@ -448,17 +449,17 @@ export async function listMyCalls(
   cursor: string | null = null
 ): Promise<ListMyCallsResult> {
   if (!uid) return { calls: [], nextCursor: null };
-  const constraints = [
+  const constraints: QueryConstraint[] = [
     where("participantUids", "array-contains", uid),
     orderBy("created", "desc"),
-    limit(pageSize),
   ];
   if (cursor) {
     const cursorSnap = await getDoc(callRef(cursor));
     if (cursorSnap.exists()) {
-      constraints.splice(constraints.length - 1, 0, startAfter(cursorSnap));
+      constraints.push(startAfter(cursorSnap));
     }
   }
+  constraints.push(limit(pageSize));
   const snap = await getDocs(query(collection(db, CALLS), ...constraints));
   const calls = snap.docs
     .map((d) => parseDoc(callDocSchema, d, "Call"))
